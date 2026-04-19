@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==============================
+// 1. TABEL PENGGUNA (USER)
+// ==============================
+model User {
+  id        String     @id @default(uuid())
+  name      String
+  email     String     @unique
+  password  String
+  role      RoleUser   @default(COFFEE_SHOP)
+  phone     String?
+  address   String?    @db.Text
+  
+  // Relasi
+  products  Product[]  // Petani memiliki banyak produk
+  orders    Order[]    // Coffee shop memiliki banyak pesanan
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+enum RoleUser {
+  PETANI
+  COFFEE_SHOP
+  ADMIN
+}
+
+// ==============================
+// 2. TABEL KATALOG KOPI (PRODUCT)
+// ==============================
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String?     @db.Text
+  price       Int         // Harga per KG
+  stock       Int         // Stok dalam KG
+  
+  // Relasi ke Petani
+  petaniId    String
+  petani      User        @relation(fields: [petaniId], references: [id])
+  orderItems  OrderItem[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// ==============================
+// 3. TABEL PESANAN UTAMA (ORDER)
+// ==============================
+model Order {
+  id          String      @id @default(uuid())
+  totalAmount Int
+  status      OrderStatus @default(PENDING)
+  
+  // Relasi ke Pembeli (Coffee Shop)
+  buyerId     String
+  buyer       User        @relation(fields: [buyerId], references: [id])
+  
+  // Relasi ke tabel lain
+  items       OrderItem[]
+  payment     Payment?    // 1 Order punya 1 Pembayaran
+  shipment    Shipment?   // 1 Order punya 1 Pengiriman
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+// ==============================
+// 4. TABEL DETAIL BARANG (ORDER ITEM)
+// ==============================
+model OrderItem {
+  id         String   @id @default(uuid())
+  quantity   Int
+  priceAtBuy Int      // Harga kopi saat dibeli (mencegah harga berubah di nota)
+  
+  // Relasi
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+}
+
+// ==============================
+// 5. TABEL PEMBAYARAN (PAYMENT)
+// ==============================
+model Payment {
+  id              String        @id @default(uuid())
+  amount          Int
+  midtransTransId String?       @unique
+  paymentType     String?
+  status          PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  
+  // Relasi 1-to-1 dengan Order
+  orderId         String        @unique
+  order           Order         @relation(fields: [orderId], references: [id])
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+}
+
+// ==============================
+// 6. TABEL PENGIRIMAN (SHIPMENT)
+// ==============================
+model Shipment {
+  id              String         @id @default(uuid())
+  shippingCost    Int
+  biteshipOrderId String?        @unique
+  waybillNumber   String?        // Nomor Resi
+  courierName     String
+  courierService  String
+  status          ShipmentStatus @default(PENDING)
+  
+  // Relasi 1-to-1 dengan Order
+  orderId         String         @unique
+  order           Order          @relation(fields: [orderId], references: [id])
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum ShipmentStatus {
+  PENDING
+  PICKUP_REQUESTED
+  SHIPPED
+  DELIVERED
+  RETURNED
+}
