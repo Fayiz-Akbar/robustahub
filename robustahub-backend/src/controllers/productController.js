@@ -54,4 +54,63 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-module.exports = { createProduct, getAllProducts };
+const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params; // Mengambil ID produk dari URL
+    const { name, description, price, stock } = req.body;
+    const petaniId = req.user.id; // ID petani yang sedang login
+
+    // 1. Cek apakah kopinya ada
+    const existingProduct = await prisma.product.findUnique({ where: { id } });
+    if (!existingProduct) {
+      return res.status(404).json({ message: 'Katalog kopi tidak ditemukan!' });
+    }
+
+    // 2. KEAMANAN: Pastikan ini kopi miliknya sendiri
+    if (existingProduct.petaniId !== petaniId) {
+      return res.status(403).json({ message: 'Akses Ditolak! Anda tidak berhak mengubah produk orang lain.' });
+    }
+
+    // 3. Simpan perubahan ke database
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: { name, description, price, stock }
+    });
+
+    res.status(200).json({
+      message: 'Katalog kopi berhasil diperbarui! 📝',
+      data: updatedProduct
+    });
+  } catch (error) {
+    console.error("Error saat update produk:", error);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+  }
+};
+
+const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const petaniId = req.user.id;
+
+    // 1. Cek keberadaan kopi
+    const existingProduct = await prisma.product.findUnique({ where: { id } });
+    if (!existingProduct) {
+      return res.status(404).json({ message: 'Katalog kopi tidak ditemukan!' });
+    }
+
+    // 2. KEAMANAN: Pastikan ini kopi miliknya sendiri
+    if (existingProduct.petaniId !== petaniId) {
+      return res.status(403).json({ message: 'Akses Ditolak! Anda tidak berhak menghapus produk orang lain.' });
+    }
+
+    // 3. Hapus dari database
+    await prisma.product.delete({ where: { id } });
+
+    res.status(200).json({ message: 'Katalog kopi berhasil dihapus dari etalase! 🗑️' });
+  } catch (error) {
+    console.error("Error saat menghapus produk:", error);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+  }
+};
+
+module.exports = { createProduct, getAllProducts, updateProduct, deleteProduct };
