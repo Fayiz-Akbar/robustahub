@@ -26,7 +26,7 @@ const getProfile = async (req, res) => {
     }
 
     res.status(200).json({
-      message: 'Data profil berhasil diambil! 👤',
+      message: 'Data profil berhasil diambil! ',
       data: user
     });
   } catch (error) {

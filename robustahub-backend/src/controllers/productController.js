@@ -78,7 +78,7 @@ const updateProduct = async (req, res) => {
     });
 
     res.status(200).json({
-      message: 'Katalog kopi berhasil diperbarui! 📝',
+      message: 'Katalog kopi berhasil diperbarui! ',
       data: updatedProduct
     });
   } catch (error) {
