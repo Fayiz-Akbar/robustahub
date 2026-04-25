@@ -21,11 +21,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
   res.json({ 
     status: 'success', 
-    message: 'Server Backend RobustaHub Berjalan Lancar! ☕' 
+    message: 'Server Backend RobustaHub Berjalan Lancar! ' 
   });
 });
 
