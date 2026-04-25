@@ -1,7 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path'); // Tambahkan baris ini!
 
+// ... (kode sisanya biarkan sama)
 // Mengimpor jalur (routes) yang baru dibuat
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');

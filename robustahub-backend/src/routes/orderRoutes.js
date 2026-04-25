@@ -1,12 +1,14 @@
 const express = require('express');
-const { createOrder, getMyOrders } = require('../controllers/orderController');
-// 1. Panggil satpam isCoffeeShop
+const { createOrder, getMyOrders, xenditWebhook } = require('../controllers/orderController'); // Pastikan xenditWebhook di-import
 const { verifyToken, isCoffeeShop } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-// 2. Pasang isCoffeeShop di sini (Harus login DULU, baru dicek apakah dia Coffee Shop)
+// Jalur pesanan untuk User
 router.post('/', verifyToken, isCoffeeShop, createOrder); 
 router.get('/', verifyToken, getMyOrders);
+
+// Jalur Webhook khusus untuk diketuk oleh Server Xendit (Tanpa middleware auth)
+router.post('/webhook', xenditWebhook);
 
 module.exports = router;

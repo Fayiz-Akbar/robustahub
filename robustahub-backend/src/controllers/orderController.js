@@ -103,4 +103,42 @@ const getMyOrders = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders };
+// Fungsi untuk menerima notifikasi pembayaran sukses dari Xendit
+const xenditWebhook = async (req, res) => {
+  try {
+    // Xendit akan mengirimkan data tagihan ke req.body
+    const { external_id, status } = req.body;
+
+    // external_id adalah ID Order yang kita kirim saat membuat invoice
+    const orderId = external_id;
+
+    // Cek jika status dari Xendit adalah PAID (Sudah dibayar) atau SETTLED
+    if (status === 'PAID' || status === 'SETTLED') {
+      
+      // 1. Ubah status Order di database menjadi PAID
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'PAID' }
+      });
+
+      // 2. Ubah status Payment di database menjadi PAID
+      await prisma.payment.updateMany({
+        where: { orderId: orderId },
+        data: { status: 'PAID' }
+      });
+
+      console.log(` HORE! Pesanan ${orderId} berhasil DIBAYAR!`);
+    }
+
+    // WAJIB: Selalu kembalikan status 200 OK ke Xendit
+    // Jika tidak, Xendit akan mengira server kita mati dan terus-menerus mengirim ulang webhook
+    return res.status(200).json({ message: 'Webhook berhasil diterima' });
+
+  } catch (error) {
+    console.error("Error pada Webhook Xendit:", error);
+    return res.status(500).json({ message: 'Terjadi kesalahan pada server webhook.' });
+  }
+};
+
+// Jangan lupa export fungsinya agar bisa dipanggil di routes!
+module.exports = { createOrder, getMyOrders, xenditWebhook };
