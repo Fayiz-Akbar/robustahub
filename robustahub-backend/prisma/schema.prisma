@@ -16,8 +16,16 @@ model User {
   email     String     @unique
   password  String
   role      RoleUser   @default(COFFEE_SHOP)
+  
+  // Kontak & Profil
   phone     String?
   address   String?    @db.Text
+  shopName  String?  
+  
+  // Data Rekening (Khusus Petani untuk pencairan Xendit)
+  bankName          String?
+  bankAccountNumber String?
+  bankAccountName   String?
   
   // Relasi
   products  Product[]  // Petani memiliki banyak produk
@@ -37,19 +45,38 @@ enum RoleUser {
 // 2. TABEL KATALOG KOPI (PRODUCT)
 // ==============================
 model Product {
-  id          String      @id @default(uuid())
-  name        String
-  description String?     @db.Text
-  price       Int         // Harga per KG
-  stock       Int         // Stok dalam KG
+  id               String         @id @default(uuid())
+  name             String
+  description      String?        @db.Text
+  price            Int            // Harga per KG
+  stock            Int            // Stok dalam KG
+  minOrder         Int            @default(5) // Minimal pembelian B2B (default 5kg)
+  
+  // Kategori & Media
+  category         CategoryCoffee
+  imageUrl         String?        // URL dari multer/cloudinary
+  
+  // Spesifikasi Teknis (Untuk B2B)
+  tastingNotes     String?
+  processingMethod String?        @default("Natural Process")
+  elevation        String?        @default("600 - 800 mdpl")
+  defectRate       String?        @default("< 5%")
+  
+  isActive         Boolean        @default(true) // Untuk hide/show etalase
   
   // Relasi ke Petani
-  petaniId    String
-  petani      User        @relation(fields: [petaniId], references: [id])
-  orderItems  OrderItem[]
+  petaniId         String
+  petani           User           @relation(fields: [petaniId], references: [id])
+  orderItems       OrderItem[]
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+enum CategoryCoffee {
+  ROBUSTA
+  ARABIKA
+  HOUSE_BLEND
 }
 
 // ==============================
@@ -76,7 +103,8 @@ model Order {
 enum OrderStatus {
   PENDING
   PAID
-  SHIPPED
+  PROCESSING  // Petani sedang mengemas
+  SHIPPED     // Petani sudah input resi
   COMPLETED
   CANCELLED
 }
@@ -100,19 +128,20 @@ model OrderItem {
 // 5. TABEL PEMBAYARAN (PAYMENT)
 // ==============================
 model Payment {
-  id              String        @id @default(uuid())
-  amount          Int
-  midtransTransId String?       @unique
-  paymentType     String?
-  status          PaymentStatus @default(PENDING)
-  paidAt          DateTime?
+  id               String        @id @default(uuid())
+  amount           Int
+  xenditInvoiceId  String?       @unique // Diubah dari midtransTransId
+  paymentUrl       String?       // Link invoice Xendit untuk diklik pembeli
+  paymentType      String?       // e.g., BANK_TRANSFER, E_WALLET
+  status           PaymentStatus @default(PENDING)
+  paidAt           DateTime?
   
   // Relasi 1-to-1 dengan Order
-  orderId         String        @unique
-  order           Order         @relation(fields: [orderId], references: [id])
+  orderId          String        @unique
+  order            Order         @relation(fields: [orderId], references: [id])
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 }
 
 enum PaymentStatus {
@@ -128,10 +157,8 @@ enum PaymentStatus {
 model Shipment {
   id              String         @id @default(uuid())
   shippingCost    Int
-  biteshipOrderId String?        @unique
-  waybillNumber   String?        // Nomor Resi
-  courierName     String
-  courierService  String
+  waybillNumber   String?        // Nomor Resi yang diinput Petani
+  courierName     String         // e.g., "Dakota Cargo"
   status          ShipmentStatus @default(PENDING)
   
   // Relasi 1-to-1 dengan Order
@@ -144,8 +171,6 @@ model Shipment {
 
 enum ShipmentStatus {
   PENDING
-  PICKUP_REQUESTED
   SHIPPED
   DELIVERED
-  RETURNED
 }
