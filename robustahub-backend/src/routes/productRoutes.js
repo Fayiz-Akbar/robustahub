@@ -1,16 +1,18 @@
 const express = require('express');
-// 1. Panggil fungsi barunya
 const { createProduct, getAllProducts, updateProduct, deleteProduct } = require('../controllers/productController');
 const { verifyToken, isPetani } = require('../middlewares/authMiddleware'); 
 
+// Import multer middleware yang sudah kita buat
+const upload = require('../middlewares/upload'); 
+
 const router = express.Router();
 
-router.post('/', verifyToken, isPetani, createProduct); 
+// Tambahkan upload.single('image') agar API bisa menerima file foto kopi
+router.post('/', verifyToken, isPetani, upload.single('image'), createProduct); 
 router.get('/', getAllProducts);
 
-// 2. Tambahkan jalur Update & Delete (Hanya Petani yang boleh akses)
-// Tanda /:id berarti URL-nya butuh ID produk, contoh: /api/products/123-abc
-router.put('/:id', verifyToken, isPetani, updateProduct);
+// Tambahkan juga ke rute update agar petani bisa ganti foto
+router.put('/:id', verifyToken, isPetani, upload.single('image'), updateProduct);
 router.delete('/:id', verifyToken, isPetani, deleteProduct);
 
 module.exports = router;
