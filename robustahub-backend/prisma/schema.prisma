@@ -10,7 +10,7 @@ datasource db {
 // ==============================
 // 1. TABEL PENGGUNA (USER)
 // ==============================
-model User {
+model Pengguna {
   id        String     @id @default(uuid())
   name      String
   email     String     @unique
@@ -22,14 +22,14 @@ model User {
   address   String?    @db.Text
   shopName  String?  
   
-  // Data Rekening (Khusus Petani untuk pencairan Xendit)
+  // Data Rekening
   bankName          String?
   bankAccountNumber String?
   bankAccountName   String?
   
   // Relasi
-  products  Product[]  // Petani memiliki banyak produk
-  orders    Order[]    // Coffee shop memiliki banyak pesanan
+  products  Product[] 
+  orders    Order[]    
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -66,7 +66,7 @@ model Product {
   
   // Relasi ke Petani
   petaniId         String
-  petani           User           @relation(fields: [petaniId], references: [id])
+  petani           Pengguna       @relation(fields: [petaniId], references: [id])
   orderItems       OrderItem[]
 
   createdAt        DateTime       @default(now())
@@ -89,7 +89,7 @@ model Order {
   
   // Relasi ke Pembeli (Coffee Shop)
   buyerId     String
-  buyer       User        @relation(fields: [buyerId], references: [id])
+  buyer       Pengguna        @relation(fields: [buyerId], references: [id])
   
   // Relasi ke tabel lain
   items       OrderItem[]

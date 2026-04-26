@@ -9,7 +9,7 @@ const register = async (req, res) => {
     const { name, email, password, role, phone, address } = req.body;
 
     // 2. Mengecek apakah email tersebut sudah pernah didaftarkan
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.pengguna.findUnique({
       where: { email }
     });
 
@@ -21,8 +21,8 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 4. Menyimpan data Pengguna baru ke tabel User di PostgreSQL
-    const newUser = await prisma.user.create({
+    // 4. Menyimpan data Pengguna baru ke tabel pengguna di PostgreSQL
+    const newUser = await prisma.pengguna.create({
       data: {
         name,
         email,
@@ -55,7 +55,7 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     // 1. Cari pengguna berdasarkan email
-    const user = await prisma.user.findUnique({
+    const user = await prisma.pengguna.findUnique({
       where: { email }
     });
 
