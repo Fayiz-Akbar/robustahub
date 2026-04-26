@@ -142,7 +142,7 @@ const xenditWebhook = async (req, res) => {
         data: { status: 'SUCCESS' }
       });
 
-      console.log(`✅ HORE! Pesanan ${orderId} berhasil DIBAYAR LUNAS!`);
+      console.log(` HORE! Pesanan ${orderId} berhasil DIBAYAR LUNAS!`);
     }
 
     return res.status(200).json({ message: 'Webhook berhasil diterima' });
