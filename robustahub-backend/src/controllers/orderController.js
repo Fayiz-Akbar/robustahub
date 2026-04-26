@@ -1,96 +1,116 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { Xendit } = require('xendit-node');
+
+// Inisialisasi Xendit dengan Secret Key dari file .env
+const xenditClient = new Xendit({ secretKey: process.env.XENDIT_SECRET_KEY });
+const { Invoice } = xenditClient;
 
 const createOrder = async (req, res) => {
   try {
-    const buyerId = req.user.id; // Diambil otomatis dari tiket/token
-    const { items } = req.body;  // Data keranjang belanja dari Postman/Frontend
+    const buyerId = req.user.id;
+    const { items, courierName, shippingCost } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: 'Keranjang belanja kosong!' });
     }
 
-    // Jurus Prisma Transaction: Kalau satu gagal, semua dibatalkan!
+    // 1. SIMPAN KE DATABASE (Menggunakan Prisma Transaction)
     const newOrder = await prisma.$transaction(async (tx) => {
-      let totalAmount = 0;
+      let totalAmount = shippingCost ? parseInt(shippingCost) : 0;
       let orderItemsData = [];
 
-      // 1. Cek setiap kopi yang dibeli
       for (let item of items) {
-        // Cari kopi di database
         const product = await tx.product.findUnique({ where: { id: item.productId } });
 
         if (!product) throw new Error(`Produk tidak ditemukan`);
         if (product.stock < item.quantity) throw new Error(`Stok ${product.name} tidak cukup!`);
 
-        // Hitung total harga (Harga Asli x Jumlah Beli)
         totalAmount += product.price * item.quantity;
 
-        // Siapkan data untuk tabel OrderItem (Nota Detail)
         orderItemsData.push({
           productId: product.id,
           quantity: item.quantity,
-          priceAtBuy: product.price // Kita kunci harganya saat dibeli
+          priceAtBuy: product.price
         });
 
-        // Kurangi stok kopi di etalase Petani
         await tx.product.update({
           where: { id: product.id },
           data: { stock: product.stock - item.quantity }
         });
       }
 
-      // 2. Buat Nota Utama di tabel Order
       const order = await tx.order.create({
         data: {
           buyerId,
           totalAmount,
-          status: 'PENDING', // Status awal selalu PENDING (Belum dibayar)
+          status: 'PENDING',
           items: {
-            create: orderItemsData // Otomatis mengisi tabel OrderItem!
+            create: orderItemsData
+          },
+          // Karena di schema.prisma kamu ada relasi Shipment
+          shipment: {
+            create: {
+              shippingCost: shippingCost ? parseInt(shippingCost) : 0,
+              courierName: courierName || "Kurir B2B"
+            }
           }
         },
-        include: {
-          items: true // Tampilkan daftar barang di response
-        }
+        include: { items: true }
       });
 
       return order;
     });
 
+    // 2. MINTA LINK PEMBAYARAN KE XENDIT
+    const xenditInvoice = await Invoice.createInvoice({
+      data: {
+        externalId: newOrder.id, // ID Order database kita
+        amount: newOrder.totalAmount,
+        description: `Pembayaran Biji Kopi RobustaHub - Order ${newOrder.id}`,
+        successRedirectUrl: 'http://localhost:5173/riwayat-pesanan',
+        failureRedirectUrl: 'http://localhost:5173/keranjang-belanja',
+      }
+    });
+
+    // 3. SIMPAN LINK PEMBAYARAN KE TABEL PAYMENT
+    await prisma.payment.create({
+      data: {
+        orderId: newOrder.id,
+        amount: newOrder.totalAmount,
+        xenditInvoiceId: xenditInvoice.id,
+        paymentUrl: xenditInvoice.invoiceUrl,
+        status: 'PENDING'
+      }
+    });
+
+    // 4. KIRIM BALASAN KE POSTMAN / FRONTEND
     res.status(201).json({
-      message: 'Pesanan berhasil dibuat! ',
+      message: 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.',
+      paymentUrl: xenditInvoice.invoiceUrl,
       data: newOrder
     });
 
   } catch (error) {
     console.error("Error saat membuat pesanan:", error);
-    // Tangkap error jika stok habis
     if (error.message.includes('tidak ditemukan') || error.message.includes('tidak cukup')) {
       return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    res.status(500).json({ message: 'Terjadi kesalahan pada server saat memproses checkout.' });
   }
 };
 
 const getMyOrders = async (req, res) => {
   try {
-    // Ambil ID pengguna yang sedang login dari tiket (token)
     const buyerId = req.user.id;
-
-    // Cari semua pesanan milik pengguna tersebut
     const orders = await prisma.order.findMany({
       where: { buyerId: buyerId },
       include: {
-        items: {
-          include: {
-            product: {
-              select: { name: true } // Ambil nama kopinya biar notanya rapi
-            }
-          }
-        }
+        items: { include: { product: { select: { name: true } } } },
+        payment: true, // Tampilkan data pembayaran juga
+        shipment: true
       },
-      orderBy: { createdAt: 'desc' } // Urutkan dari pesanan paling baru
+      orderBy: { createdAt: 'desc' }
     });
 
     res.status(200).json({
@@ -103,42 +123,33 @@ const getMyOrders = async (req, res) => {
   }
 };
 
-// Fungsi untuk menerima notifikasi pembayaran sukses dari Xendit
+// 5. SISTEM WEBHOOK UNTUK MENERIMA NOTIFIKASI DARI XENDIT
 const xenditWebhook = async (req, res) => {
   try {
-    // Xendit akan mengirimkan data tagihan ke req.body
     const { external_id, status } = req.body;
-
-    // external_id adalah ID Order yang kita kirim saat membuat invoice
     const orderId = external_id;
 
-    // Cek jika status dari Xendit adalah PAID (Sudah dibayar) atau SETTLED
     if (status === 'PAID' || status === 'SETTLED') {
-      
-      // 1. Ubah status Order di database menjadi PAID
+      // Ubah status order jadi PAID
       await prisma.order.update({
         where: { id: orderId },
         data: { status: 'PAID' }
       });
 
-      // 2. Ubah status Payment di database menjadi PAID
+      // Ubah status payment jadi SUCCESS
       await prisma.payment.updateMany({
         where: { orderId: orderId },
-        data: { status: 'PAID' }
+        data: { status: 'SUCCESS' }
       });
 
-      console.log(` HORE! Pesanan ${orderId} berhasil DIBAYAR!`);
+      console.log(`✅ HORE! Pesanan ${orderId} berhasil DIBAYAR LUNAS!`);
     }
 
-    // WAJIB: Selalu kembalikan status 200 OK ke Xendit
-    // Jika tidak, Xendit akan mengira server kita mati dan terus-menerus mengirim ulang webhook
     return res.status(200).json({ message: 'Webhook berhasil diterima' });
-
   } catch (error) {
     console.error("Error pada Webhook Xendit:", error);
-    return res.status(500).json({ message: 'Terjadi kesalahan pada server webhook.' });
+    return res.status(500).json({ message: 'Terjadi kesalahan pada webhook server.' });
   }
 };
 
-// Jangan lupa export fungsinya agar bisa dipanggil di routes!
 module.exports = { createOrder, getMyOrders, xenditWebhook };
