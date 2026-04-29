@@ -1,12 +1,21 @@
-export default function App() {
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from './pages/Login';
+import KatalogKopi from './pages/KatalogKopi';
+// Import halaman lainnya nanti di sini...
+
+function App() {
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
-      <h1 className="text-5xl font-bold text-amber-500 mb-4">
-         RobustaHub
-      </h1>
-      <p className="text-lg text-gray-300">
-        Frontend React + Tailwind CSS V4! 
-      </p>
-    </div>
-  )
+    <Router>
+      <div className="min-h-screen bg-gray-50 font-sans">
+        {/* Navbar bisa ditaruh di sini nanti jika ingin muncul di semua halaman */}
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/katalog" element={<KatalogKopi />} />
+          {/* Tambahkan rute lain dari hasil Figma-mu di sini */}
+        </Routes>
+      </div>
+    </Router>
+  );
 }
+
+export default App;
