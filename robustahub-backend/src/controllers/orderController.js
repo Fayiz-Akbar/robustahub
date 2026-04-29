@@ -152,4 +152,41 @@ const xenditWebhook = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders, xenditWebhook };
+// Fungsi untuk memproses pengiriman dan memasukkan nomor resi
+const updateTrackingNumber = async (req, res) => {
+  try {
+    const { id } = req.params; // ID pesanan (OrderId)
+    const { trackingNumber } = req.body;
+
+    if (!trackingNumber) {
+      return res.status(400).json({ message: 'Nomor resi tidak boleh kosong!' });
+    }
+
+    // Ubah status order jadi SHIPPED dan simpan nomor resi ke tabel Shipment
+    const updatedOrder = await prisma.order.update({
+      where: { id: id },
+      data: {
+        status: 'SHIPPED',
+        shipment: {
+          update: {
+            trackingNumber: trackingNumber
+          }
+        }
+      },
+      include: {
+        shipment: true // Tampilkan data pengiriman di hasil respons
+      }
+    });
+
+    res.status(200).json({
+      message: 'Pesanan berhasil diproses! Nomor resi telah disimpan.',
+      data: updatedOrder
+    });
+
+  } catch (error) {
+    console.error("Error saat update resi:", error);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server saat memperbarui resi.' });
+  }
+};
+
+module.exports = { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber };
