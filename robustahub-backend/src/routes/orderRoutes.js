@@ -1,10 +1,10 @@
 const express = require('express');
-const { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber } = require('../controllers/orderController'); // Pastikan xenditWebhook di-import
-const { verifyToken, isCoffeeShop } = require('../middlewares/authMiddleware');
-
 const router = express.Router();
 
-// Jalur pesanan untuk User
+const { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber } = require('../controllers/orderController'); 
+const { verifyToken, isCoffeeShop, isPetani } = require('../middlewares/authMiddleware');
+
+// Jalur pesanan untuk User (Coffee Shop)
 router.post('/', verifyToken, isCoffeeShop, createOrder); 
 router.get('/', verifyToken, getMyOrders);
 
@@ -12,6 +12,7 @@ router.get('/', verifyToken, getMyOrders);
 router.post('/webhook', xenditWebhook);
 
 // Rute untuk Petani: Memproses pesanan dan input resi
-router.put('/:id/ship', authMiddleware, isPetani, updateTrackingNumber);
+// Ubah authMiddleware menjadi verifyToken
+router.put('/:id/ship', verifyToken, isPetani, updateTrackingNumber);
 
 module.exports = router;

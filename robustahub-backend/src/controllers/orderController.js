@@ -156,9 +156,11 @@ const xenditWebhook = async (req, res) => {
 const updateTrackingNumber = async (req, res) => {
   try {
     const { id } = req.params; // ID pesanan (OrderId)
-    const { trackingNumber } = req.body;
+    
+    // UBAH DARI trackingNumber MENJADI waybillNumber
+    const { waybillNumber } = req.body;
 
-    if (!trackingNumber) {
+    if (!waybillNumber) {
       return res.status(400).json({ message: 'Nomor resi tidak boleh kosong!' });
     }
 
@@ -169,7 +171,7 @@ const updateTrackingNumber = async (req, res) => {
         status: 'SHIPPED',
         shipment: {
           update: {
-            trackingNumber: trackingNumber
+            waybillNumber: waybillNumber // <-- PERBAIKAN DI SINI
           }
         }
       },
