@@ -142,4 +142,25 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-module.exports = { createProduct, getAllProducts, updateProduct, deleteProduct };
+const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await prisma.product.findUnique({
+      where: { id: id }
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: "Produk tidak ditemukan!" });
+    }
+
+    res.status(200).json({
+      message: "Berhasil mengambil detail produk!",
+      data: product
+    });
+  } catch (error) {
+    console.error("Error saat mengambil detail produk:", error);
+    res.status(500).json({ message: "Terjadi kesalahan pada server." });
+  }
+};
+
+module.exports = { createProduct, getAllProducts, updateProduct, deleteProduct, getProductById };

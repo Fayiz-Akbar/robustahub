@@ -1,5 +1,5 @@
 const express = require('express');
-const { createProduct, getAllProducts, updateProduct, deleteProduct } = require('../controllers/productController');
+const { createProduct, getAllProducts, updateProduct, deleteProduct, getProductById } = require('../controllers/productController');
 const { verifyToken, isPetani } = require('../middlewares/authMiddleware'); 
 
 // Import multer middleware yang sudah kita buat
@@ -14,5 +14,6 @@ router.get('/', getAllProducts);
 // Tambahkan juga ke rute update agar petani bisa ganti foto
 router.put('/:id', verifyToken, isPetani, upload.single('image'), updateProduct);
 router.delete('/:id', verifyToken, isPetani, deleteProduct);
+router.get('/:id', getProductById);
 
 module.exports = router;
