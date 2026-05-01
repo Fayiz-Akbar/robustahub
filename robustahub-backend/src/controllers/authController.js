@@ -8,6 +8,16 @@ const register = async (req, res) => {
     // 1. Menangkap data yang dikirim oleh Frontend / Postman
     const { name, email, password, role, phone, address } = req.body;
 
+    // ==========================================
+    // BENTENG KEAMANAN BACKEND: Validasi Password
+    // ==========================================
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
+      return res.status(400).json({ 
+        message: 'Akses Ditolak: Password harus minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka!' 
+      });
+    }
+    // ==========================================
+
     // 2. Mengecek apakah email tersebut sudah pernah didaftarkan
     const existingUser = await prisma.pengguna.findUnique({
       where: { email }

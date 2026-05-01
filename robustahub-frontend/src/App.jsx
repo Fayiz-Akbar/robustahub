@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ProductCard from './components/ProductCard';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 // Membuat halaman dummy sementara untuk melihat hasil komponen
 const BerandaSementara = () => {
@@ -23,9 +25,13 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 font-sans">
-        <Navbar />
         <Routes>
-          <Route path="/" element={<BerandaSementara />} />
+          {/* Rute Autentikasi (Tidak pakai Navbar) */}
+          <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* Rute lain (Nanti kita tambahkan Navbar di dalamnya) */}
+          {/* <Route path="/katalog" element={<> <Navbar /> <BerandaSementara /> </>} /> */}
         </Routes>
       </div>
     </Router>
