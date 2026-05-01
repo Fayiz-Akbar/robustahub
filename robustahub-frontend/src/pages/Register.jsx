@@ -5,9 +5,9 @@ const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // State baru untuk visibilitas password
+  const [showPassword, setShowPassword] = useState(false); 
   const [role, setRole] = useState('');
-  const [passwordError, setPasswordError] = useState(''); // State baru untuk menyimpan pesan error
+  const [passwordError, setPasswordError] = useState(''); 
   const navigate = useNavigate();
 
   // Fungsi untuk mengecek kekuatan password

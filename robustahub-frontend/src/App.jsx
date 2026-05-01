@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import ProductCard from './components/ProductCard';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import KatalogKopi from './pages/KatalogKopi';
 
 // Membuat halaman dummy sementara untuk melihat hasil komponen
 const BerandaSementara = () => {
@@ -31,7 +32,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           
           {/* Rute lain (Nanti kita tambahkan Navbar di dalamnya) */}
-          {/* <Route path="/katalog" element={<> <Navbar /> <BerandaSementara /> </>} /> */}
+          <Route path="/katalog" element={<KatalogKopi />} />
         </Routes>
       </div>
     </Router>
