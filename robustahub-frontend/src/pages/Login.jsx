@@ -8,16 +8,53 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false); 
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Login dicoba dengan:", email, password);
-    // TODO: Nanti sambungkan dengan API Backend
-    // Simulasi sukses login, arahkan ke katalog
-    navigate('/katalog'); 
+    
+    try {
+      // Menembak API Backend Express.js
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email, 
+          password 
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // 1. Simpan Token JWT ke Browser
+        localStorage.setItem('token', result.token);
+        
+        // 2. Simpan Data User (Nama, Email, Role) ke Browser
+        localStorage.setItem('user', JSON.stringify(result.data));
+
+        // ======================================================
+        // 3. LOGIKA REDIRECT BERDASARKAN ROLE (PETANI vs PEMBELI)
+        // ======================================================
+        if (result.data.role === 'PETANI') {
+          // Petani langsung dilempar ke Dashboard
+          navigate('/dashboard'); 
+        } else {
+          // Coffee Shop (pembeli) dilempar ke Katalog
+          navigate('/katalog'); 
+        }
+        
+      } else {
+        // Menampilkan pesan error dari backend
+        alert(`Login Gagal: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Error fetching:", error);
+      alert('Tidak dapat terhubung ke server backend. Pastikan server menyala!');
+    }
   };
 
   return (
-    // split-layout: flexbox, responsif kolom (HP) dan baris (Desktop)
     <div className="flex flex-col md:flex-row min-h-screen bg-[#FAF7F2]">
       
       {/* Sisi Kiri - Gambar Visual */}
@@ -73,32 +110,26 @@ const Login = () => {
               <label className="block text-[14px] font-semibold text-[#2D2D2D] mb-2">
                 Password
               </label>
-              {/* Tambahkan relative untuk membungkus input dan icon */}
               <div className="relative">
                 <input 
-                  // Tipe input berubah secara dinamis berdasarkan state
                   type={showPassword ? "text" : "password"} 
                   required
                   placeholder="Masukkan password Anda"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  // Tambahkan pr-12 (padding-right) agar teks tidak menabrak icon mata
                   className="w-full px-4 py-[14px] pr-12 border border-[#E2D9CC] rounded-lg text-[15px] outline-none transition-all duration-200 focus:border-[#804A23] focus:shadow-[0_0_0_3px_rgba(128,74,35,0.1)]"
                 />
-                {/* Tombol Icon Mata diletakkan absolute di kanan input */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#804A23] transition-colors focus:outline-none"
                 >
                   {showPassword ? (
-                    // Icon Mata Terbuka
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   ) : (
-                    // Icon Mata Tertutup / Silang
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
                     </svg>

@@ -19,7 +19,7 @@ const Register = () => {
     return ""; // Jika kosong, berarti password aman
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     
     // Cek password sebelum memproses form
@@ -31,11 +31,34 @@ const Register = () => {
 
     setPasswordError(''); // Bersihkan error jika password sudah aman
 
-    console.log("Mencoba mendaftar dengan:", { name, email, password, role });
-    // TODO: Nanti sambungkan ke endpoint POST /api/auth/register di backend
-    
-    // Simulasi sukses register, arahkan ke halaman login
-    navigate('/'); 
+    try {
+      // Menembak API Backend Express.js
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          name, 
+          email, 
+          password, 
+          role 
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('Registrasi Berhasil! Silakan Login.');
+        navigate('/'); // Pindah ke halaman Login
+      } else {
+        // Menampilkan pesan error dari backend (misal: Email sudah digunakan)
+        alert(`Gagal: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Error fetching:", error);
+      alert('Tidak dapat terhubung ke server backend. Pastikan server menyala!');
+    }
   };
 
   return (
