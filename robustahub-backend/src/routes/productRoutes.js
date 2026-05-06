@@ -8,7 +8,7 @@ const upload = require('../middlewares/upload');
 const router = express.Router();
 
 // Tambahkan upload.single('image') agar API bisa menerima file foto kopi
-router.post('/', verifyToken, isPetani, upload.single('image'), createProduct); 
+router.post('/', verifyToken, isPetani, upload.array('images', 5), createProduct); 
 router.get('/', getAllProducts);
 
 // Tambahkan juga ke rute update agar petani bisa ganti foto

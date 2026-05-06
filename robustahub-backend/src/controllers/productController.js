@@ -4,16 +4,21 @@ const prisma = new PrismaClient();
 const createProduct = async (req, res) => {
   try {
     const { 
-        name, description, price, stock, 
-        minOrder, category, tastingNotes, 
-        processingMethod, elevation, defectRate 
+      name, description, price, stock, minOrder, 
+      tastingNotes, processingMethod, elevation, category // <-- Tangkap category di sini
     } = req.body;
-    
-    // Ambil ID Petani dari token yang sudah dicek oleh satpam (middleware)
-    const petaniId = req.user.id;
 
-    // Ambil path gambar dari Multer (jika ada file yang diupload)
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    // Menangani banyak foto (jika menggunakan upload.array('images'))
+    let savedImageUrl = null;
+    if (req.files && req.files.length > 0) {
+      // Kumpulkan semua path foto
+      const imagePaths = req.files.map(file => `/uploads/${file.filename}`);
+      // Simpan sebagai string JSON agar bisa masuk ke kolom String di Prisma
+      savedImageUrl = JSON.stringify(imagePaths); 
+    } else if (req.file) {
+      // Fallback jika ternyata masih pakai upload.single('image')
+      savedImageUrl = `/uploads/${req.file.filename}`;
+    }
 
     // Simpan ke database
     const newProduct = await prisma.product.create({
@@ -23,23 +28,19 @@ const createProduct = async (req, res) => {
         price: parseInt(price),
         stock: parseInt(stock),
         minOrder: minOrder ? parseInt(minOrder) : 5,
-        category,
         tastingNotes,
         processingMethod,
         elevation,
-        defectRate,
-        imageUrl,
-        petaniId
+        imageUrl: savedImageUrl,
+        category: category || "ROBUSTA", // <-- Masukkan category ke Prisma
+        petaniId: req.user.id // Pastikan ini sesuai dengan cara tokenmu menyimpan ID
       }
     });
 
-    res.status(201).json({
-      message: 'Katalog kopi berhasil ditambahkan!',
-      data: newProduct
-    });
+    res.status(201).json({ message: "Produk berhasil ditambahkan", data: newProduct });
   } catch (error) {
-    console.error("Error saat tambah produk:", error);
-    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    console.error("Error create product:", error);
+    res.status(500).json({ message: "Terjadi kesalahan pada server", error: error.message });
   }
 };
 

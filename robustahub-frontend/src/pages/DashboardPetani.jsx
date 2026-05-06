@@ -7,11 +7,16 @@ const DashboardPetani = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // State untuk Data API
   const [products, setProducts] = useState([]);
-  const [formData, setFormData] = useState({ name: '', price: '', stock: '' });
-  // State khusus untuk menyimpan file gambar
-  const [imageFile, setImageFile] = useState(null); 
+  
+  // State disesuaikan dengan skema Prisma (termasuk tastingNotes & processingMethod)
+  const [formData, setFormData] = useState({ 
+    name: '', price: '', stock: '', 
+    description: '', processingMethod: '', elevation: '', tastingNotes: '',
+    category: 'ROBUSTA'
+  });
+  
+  const [imageFiles, setImageFiles] = useState([]); 
   
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -43,35 +48,38 @@ const DashboardPetani = () => {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     
-    // Gunakan FormData untuk mengirim file gambar + teks sekaligus
     const dataToSend = new FormData();
     dataToSend.append('name', formData.name);
     dataToSend.append('price', parseInt(formData.price));
     dataToSend.append('stock', parseInt(formData.stock));
-    dataToSend.append('minOrder', 1);
+    dataToSend.append('minOrder', 5); // Mengikuti default schema Prisma
+    dataToSend.append('category', formData.category);
     
-    // Jika user memilih gambar, masukkan ke FormData
-    if (imageFile) {
-      // Pastikan backend kamu menerima field bernama 'image' di router mutler-nya
-      dataToSend.append('image', imageFile); 
+    // Field Tambahan (Opsional)
+    if (formData.description) dataToSend.append('description', formData.description);
+    if (formData.processingMethod) dataToSend.append('processingMethod', formData.processingMethod);
+    if (formData.elevation) dataToSend.append('elevation', formData.elevation);
+    if (formData.tastingNotes) dataToSend.append('tastingNotes', formData.tastingNotes);
+    
+    if (imageFiles.length > 0) {
+      for (let i = 0; i < imageFiles.length; i++) {
+        dataToSend.append('images', imageFiles[i]); 
+      }
     }
 
     try {
       const response = await fetch('http://localhost:5000/api/products', {
         method: 'POST',
-        headers: {
-          // PERHATIAN: JANGAN set 'Content-Type': 'application/json' di sini!
-          // Browser akan otomatis mengatur boundary untuk multipart/form-data
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: dataToSend
       });
 
       if (response.ok) {
         alert('Kopi berhasil ditambahkan ke Etalase!');
         setIsModalOpen(false);
-        setFormData({ name: '', price: '', stock: '' }); 
-        setImageFile(null); // Kosongkan file gambar
+        // Kosongkan seluruh form, kembalikan kategori ke ROBUSTA
+        setFormData({ name: '', price: '', stock: '', description: '', processingMethod: '', elevation: '', tastingNotes: '', category: 'ROBUSTA' }); // <-- UPDATE INI
+        setImageFiles([]); 
         fetchMyProducts(); 
       } else {
         const result = await response.json();
@@ -110,17 +118,32 @@ const DashboardPetani = () => {
 
       <main className="flex-1 flex flex-col relative overflow-y-auto w-full">
         
+        {/* ================= HEADER (Hamburger Kanan di Mobile) ================= */}
         <header className="bg-white h-[80px] px-5 lg:px-10 flex justify-between items-center border-b border-[#EFEFEF] sticky top-0 z-50">
+          
+          <div className="text-[18px] lg:text-[22px] font-bold text-[#1A1D20]">
+            Dashboard & Inventaris
+          </div>
+
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 text-[#3A2210] bg-[#F8F9FA] rounded-lg">
-              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <div className="hidden lg:flex items-center gap-3 font-semibold text-[#1A1D20] px-4 py-2 bg-[#F8F9FA] rounded-full cursor-default">
+              <span>{user.name}</span>
+              <div className="w-9 h-9 bg-[#A86431] text-white rounded-full flex items-center justify-center text-[14px] uppercase">
+                {initial}
+              </div>
+            </div>
+
+            {/* Tombol Hamburger di Kanan */}
+            <button 
+              onClick={() => setIsSidebarOpen(true)} 
+              className="lg:hidden p-2 text-[#3A2210] bg-[#F8F9FA] hover:bg-[#EFEFEF] rounded-lg transition-colors focus:outline-none"
+            >
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
             </button>
-            <div className="text-[18px] lg:text-[22px] font-bold text-[#1A1D20]">Dashboard & Inventaris</div>
           </div>
-          <div className="flex items-center gap-3 font-semibold text-[#1A1D20] px-4 py-2 bg-[#F8F9FA] rounded-full cursor-default">
-            <span className="hidden md:block">{user.name}</span>
-            <div className="w-9 h-9 bg-[#A86431] text-white rounded-full flex items-center justify-center text-[14px] uppercase">{initial}</div>
-          </div>
+
         </header>
 
         <div className="p-5 lg:p-10 max-w-[1200px] mx-auto w-full box-border">
@@ -185,40 +208,59 @@ const DashboardPetani = () => {
                       <td colSpan="4" className="py-10 text-center text-gray-500">Anda belum menambahkan produk kopi apapun.</td>
                     </tr>
                   ) : (
-                    products.map((item) => (
-                      <tr key={item.id} className="hover:bg-[#FDF9F5] transition-colors">
-                        <td className="py-5 px-8 border-b border-[#EFEFEF] whitespace-nowrap">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#EFEFEF]">
-                              <img 
-                                src={item.imageUrl ? `http://localhost:5000${item.imageUrl}` : "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=100&q=80"} 
-                                alt={item.name} 
-                                className="w-full h-full object-cover" 
-                              />
+                    products.map((item) => {
+                      const backendUrl = "http://localhost:5000";
+                      let finalImageUrl = "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=500&q=80";
+
+                      if (item.imageUrl) {
+                        try {
+                          // Coba parse jika formatnya berupa JSON array string seperti '["/uploads/file.jpg"]'
+                          const parsedImage = JSON.parse(item.imageUrl);
+                          if (Array.isArray(parsedImage) && parsedImage.length > 0) {
+                            finalImageUrl = `${backendUrl}${parsedImage[0]}`;
+                          } else {
+                            finalImageUrl = `${backendUrl}${item.imageUrl}`;
+                          }
+                        } catch (e) {
+                          // Jika error saat diparse, berarti stringnya sudah bersih '/uploads/file.jpg'
+                          finalImageUrl = `${backendUrl}${item.imageUrl}`;
+                        }
+                      }
+
+                      return (
+                        <tr key={item.id} className="hover:bg-[#FDF9F5] transition-colors">
+                          <td className="py-5 px-8 border-b border-[#EFEFEF] whitespace-nowrap">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#EFEFEF] shrink-0">
+                                <img src={finalImageUrl} alt={item.name} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-[#3A2210] text-[15px] truncate">{item.name}</div>
+                                <div className="text-[12px] text-[#6C757D] mt-1 truncate">
+                                  {item.processingMethod || 'Natural Process'} • {item.elevation || '800 mdpl'}
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="font-bold text-[#3A2210]">{item.name}</div>
+                          </td>
+                          <td className="py-5 px-8 border-b border-[#EFEFEF] whitespace-nowrap font-bold text-[#A86431]">
+                            Rp {item.price.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-5 px-8 border-b border-[#EFEFEF] whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1.5 bg-[#E1F8EF] text-[#10B981] py-1.5 px-3 rounded-full text-[13px] font-semibold">
+                              <div className="w-2 h-2 bg-[#10B981] rounded-full"></div> 
+                              Tersedia ({item.stock}kg)
+                            </span>
+                          </td>
+                          <td className="py-5 px-8 border-b border-[#EFEFEF] whitespace-nowrap">
+                            <div className="flex gap-3">
+                              <button onClick={() => handleDeleteProduct(item.id)} className="py-2 px-3 rounded-md border-none font-semibold cursor-pointer transition-colors text-red-500 bg-red-50 hover:bg-red-100">
+                                Hapus
+                              </button>
                             </div>
-                          </div>
-                        </td>
-                        <td className="py-5 px-8 border-b border-[#EFEFEF] whitespace-nowrap font-bold text-[#A86431]">
-                          Rp {item.price.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-5 px-8 border-b border-[#EFEFEF] whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1.5 bg-[#E1F8EF] text-[#10B981] py-1.5 px-3 rounded-full text-[13px] font-semibold">
-                            <div className="w-2 h-2 bg-[#10B981] rounded-full"></div> 
-                            Tersedia ({item.stock}kg)
-                          </span>
-                        </td>
-                        <td className="py-5 px-8 border-b border-[#EFEFEF] whitespace-nowrap">
-                          <div className="flex gap-3">
-                            <button onClick={() => handleDeleteProduct(item.id)} className="py-2 px-3 rounded-md border-none font-semibold cursor-pointer transition-colors text-red-500 bg-red-50 hover:bg-red-100">
-                              Hapus
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -227,69 +269,156 @@ const DashboardPetani = () => {
         </div>
       </main>
 
-      {/* Modal Tambah Kopi */}
+      {/* ================= MODAL TAMBAH KOPI (DIUPDATE) ================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200]">
-          <div className="bg-white w-[90%] max-w-[500px] rounded-2xl p-8 shadow-[0_20px_40px_rgba(0,0,0,0.1)]">
-            <div className="flex justify-between items-center mb-6">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+          <div className="bg-white w-full max-w-[600px] rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex flex-col max-h-[90vh]">
+            
+            <div className="flex justify-between items-center p-6 border-b border-[#EFEFEF] shrink-0">
               <h3 className="m-0 text-[20px] font-bold text-[#3A2210]">Tambah Produk Kopi</h3>
-              <button onClick={() => setIsModalOpen(false)} className="bg-none border-none text-[24px] text-[#6C757D] cursor-pointer">&times;</button>
+              <button onClick={() => setIsModalOpen(false)} className="bg-none border-none text-[28px] text-[#6C757D] cursor-pointer leading-none hover:text-[#1A1D20]">&times;</button>
             </div>
             
-            <form onSubmit={handleAddProduct}>
-              
-              {/* === INPUT FILE GAMBAR BARU === */}
-              <div className="mb-4">
-                <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Foto Produk</label>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => setImageFile(e.target.files[0])}
-                  className="w-full text-sm text-[#6C757D] file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FDF9F5] file:text-[#A86431] hover:file:bg-[#F8F9FA] cursor-pointer" 
-                />
-              </div>
+            {/* Area Form Scrollable */}
+            <div className="p-6 overflow-y-auto">
+              <form id="addProductForm" onSubmit={handleAddProduct}>
+                
+                {/* Upload Foto */}
+                <div className="mb-5">
+                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">
+                    Foto Produk <span className="text-[#6C757D] font-normal">(Opsional, bisa lebih dari 1)</span>
+                  </label>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => setImageFiles(Array.from(e.target.files))}
+                    className="w-full text-sm text-[#6C757D] file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FDF9F5] file:text-[#A86431] hover:file:bg-[#F8F9FA] cursor-pointer border border-[#EFEFEF] p-2 rounded-lg" 
+                  />
+                  {imageFiles.length > 0 && (
+                    <p className="text-[13px] text-[#10B981] mt-2 font-medium">✓ {imageFiles.length} file gambar dipilih</p>
+                  )}
+                </div>
 
-              <div className="mb-4">
-                <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Nama Kopi</label>
-                <input 
-                  type="text" 
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[15px] outline-none focus:border-[#A86431]" 
-                  placeholder="Cth: Robusta Premium Natar" 
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Harga per Kilogram (Rp)</label>
-                <input 
-                  type="number" 
-                  required
-                  value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
-                  className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[15px] outline-none focus:border-[#A86431]" 
-                  placeholder="Cth: 50000" 
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Stok Tersedia (Kg)</label>
-                <input 
-                  type="number" 
-                  required
-                  value={formData.stock}
-                  onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                  className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[15px] outline-none focus:border-[#A86431]" 
-                  placeholder="Cth: 100" 
-                />
-              </div>
-              
-              <div className="mt-8 flex gap-3 justify-end">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="py-3 px-5 bg-white border border-[#EFEFEF] rounded-lg font-semibold cursor-pointer text-[#6C757D]">Batal</button>
-                <button type="submit" className="py-3 px-5 bg-[#3A2210] text-white border-none rounded-lg font-semibold cursor-pointer flex items-center gap-2 hover:bg-[#A86431]">
-                  Simpan Kopi
-                </button>
-              </div>
-            </form>
+
+                {/* Kategori Kopi */}
+                <div className="mb-5">
+                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Kategori Kopi <span className="text-red-500">*</span></label>
+                  <select 
+                    required
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431] appearance-none cursor-pointer"
+                    style={{
+                      backgroundImage: `url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23717171%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 16px top 50%',
+                      backgroundSize: '12px auto'
+                    }}
+                  >
+                    <option value="ROBUSTA">Kopi Robusta</option>
+                    <option value="ARABIKA">Kopi Arabika</option>
+                    <option value="BLEND">House Blend / Campuran</option>
+                  </select>
+                </div>
+                
+                {/* Nama Kopi */}
+                <div className="mb-5">
+                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Nama Kopi <span className="text-red-500">*</span></label>
+                  <input 
+                    type="text" 
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
+                    placeholder="Cth: Robusta Premium Natar" 
+                  />
+                </div>
+
+                {/* Harga & Stok */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                  <div>
+                    <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Harga per Kilogram (Rp) <span className="text-red-500">*</span></label>
+                    <input 
+                      type="number" 
+                      required
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: e.target.value})}
+                      className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
+                      placeholder="Cth: 45000" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Stok Tersedia (Kg) <span className="text-red-500">*</span></label>
+                    <input 
+                      type="number" 
+                      required
+                      value={formData.stock}
+                      onChange={(e) => setFormData({...formData, stock: e.target.value})}
+                      className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
+                      placeholder="Cth: 200" 
+                    />
+                  </div>
+                </div>
+
+                {/* Pascapanen & Ketinggian (Opsional) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                  <div>
+                    <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Proses Pascapanen <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
+                    <input 
+                      type="text" 
+                      value={formData.processingMethod}
+                      onChange={(e) => setFormData({...formData, processingMethod: e.target.value})}
+                      className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
+                      placeholder="Cth: Natural Process" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Ketinggian Tanam <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
+                    <input 
+                      type="text" 
+                      value={formData.elevation}
+                      onChange={(e) => setFormData({...formData, elevation: e.target.value})}
+                      className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
+                      placeholder="Cth: 600 - 800 mdpl" 
+                    />
+                  </div>
+                </div>
+
+                {/* Tasting Notes (Opsional) */}
+                <div className="mb-5">
+                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Tasting Notes <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
+                  <input 
+                    type="text" 
+                    value={formData.tastingNotes}
+                    onChange={(e) => setFormData({...formData, tastingNotes: e.target.value})}
+                    className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
+                    placeholder="Cth: Dark Choco, Nutty, Earthy" 
+                  />
+                </div>
+
+                {/* Deskripsi */}
+                <div className="mb-2">
+                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Deskripsi Kopi <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
+                  <textarea 
+                    rows="3"
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431] resize-y" 
+                    placeholder="Ceritakan tentang biji kopi ini..." 
+                  ></textarea>
+                </div>
+
+              </form>
+            </div>
+            
+            <div className="p-6 border-t border-[#EFEFEF] shrink-0 bg-[#F8F9FA] rounded-b-2xl flex gap-3 justify-end">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="py-2.5 px-6 bg-white border border-[#EFEFEF] rounded-lg font-semibold cursor-pointer text-[#6C757D] hover:bg-gray-50">Batal</button>
+              <button type="submit" form="addProductForm" className="py-2.5 px-6 bg-[#3A2210] text-white border-none rounded-lg font-semibold cursor-pointer flex items-center gap-2 hover:bg-[#A86431] transition-colors shadow-sm">
+                Simpan Kopi
+              </button>
+            </div>
+
           </div>
         </div>
       )}

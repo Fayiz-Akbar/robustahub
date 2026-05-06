@@ -3,9 +3,20 @@ import { useNavigate } from 'react-router-dom';
 const ProductCard = ({ product, isBestSeller }) => {
   const navigate = useNavigate();
   const backendUrl = "http://localhost:5000";
-  const imageUrl = product.imageUrl 
-    ? `${backendUrl}${product.imageUrl}` 
-    : "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=500&q=80";
+  let finalImageUrl = "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=500&q=80";
+
+  if (product.imageUrl) {
+    try {
+      const parsedImage = JSON.parse(product.imageUrl);
+      if (Array.isArray(parsedImage) && parsedImage.length > 0) {
+        finalImageUrl = `${backendUrl}${parsedImage[0]}`;
+      } else {
+        finalImageUrl = `${backendUrl}${product.imageUrl}`;
+      }
+    } catch (e) {
+      finalImageUrl = `${backendUrl}${product.imageUrl}`;
+    }
+  }
 
   // Fungsi saat tombol keranjang dipencet
   const handleAddToCart = () => {
@@ -32,7 +43,7 @@ const ProductCard = ({ product, isBestSeller }) => {
       )}
 
       <div className="relative h-[220px] overflow-hidden bg-gray-100">
-        <img src={imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <img src={finalImageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
       </div>
 
       <div className="p-6 flex flex-col flex-1">
