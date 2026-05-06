@@ -155,7 +155,7 @@ const Login = () => {
               type="submit" 
               className="w-full py-[14px] bg-[#804A23] hover:bg-[#4A2B13] text-white rounded-lg text-[16px] font-semibold transition-colors mb-6"
             >
-              Masuk ke Dashboard
+              Masuk 
             </button>
 
             <div className="text-center text-[14px] text-[#717171]">

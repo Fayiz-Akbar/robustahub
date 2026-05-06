@@ -4,6 +4,7 @@ import ProductCard from './components/ProductCard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import KatalogKopi from './pages/KatalogKopi';
+import DashboardPetani from './pages/DashboardPetani';
 
 // Membuat halaman dummy sementara untuk melihat hasil komponen
 const BerandaSementara = () => {
@@ -30,7 +31,8 @@ function App() {
           {/* Rute Autentikasi (Tidak pakai Navbar) */}
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
+          <Route path="/dashboard" element={<DashboardPetani />} />
+
           {/* Rute lain (Nanti kita tambahkan Navbar di dalamnya) */}
           <Route path="/katalog" element={<KatalogKopi />} />
         </Routes>
