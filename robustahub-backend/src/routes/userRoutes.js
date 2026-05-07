@@ -6,5 +6,6 @@ const router = express.Router();
 
 // Endpoint: GET /api/users/profile
 router.get('/profile', verifyToken, getProfile);
+router.put('/:id', verifyToken, upload.single('shopImage'), updateUserProfile);
 
 module.exports = router;

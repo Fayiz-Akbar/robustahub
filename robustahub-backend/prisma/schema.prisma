@@ -21,6 +21,8 @@ model Pengguna {
   phone     String?
   address   String?    @db.Text
   shopName  String?  
+  description String?    @db.Text   // <-- Tambahkan ini
+  shopImage   String?               // <-- Tambahkan ini (Untuk foto toko)
   
   // Data Rekening
   bankName          String?

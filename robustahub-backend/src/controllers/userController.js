@@ -35,4 +35,49 @@ const getProfile = async (req, res) => {
   }
 };
 
-module.exports = { getProfile };
+const updateUserProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, address, description, bankName, bankAccountNumber, bankAccountName } = req.body;
+
+    // Pastikan user hanya bisa mengedit profilnya sendiri
+    if (req.user.id !== id) {
+      return res.status(403).json({ message: "Akses ditolak!" });
+    }
+
+    // Siapkan data yang akan diupdate
+    let updateData = {
+      name,
+      phone,
+      address,
+      description,
+      bankName,
+      bankAccountNumber, // <-- Sesuai skema kamu
+      bankAccountName
+    };
+
+    // Jika ada file foto toko yang diupload
+    if (req.file) {
+      updateData.shopImage = `/uploads/${req.file.filename}`;
+    }
+
+    const updatedUser = await prisma.pengguna.update({
+      where: { id: id },
+      data: updateData
+    });
+
+    // Buang password dari response
+    const { password: _, ...userData } = updatedUser;
+
+    res.status(200).json({
+      message: "Profil berhasil diperbarui!",
+      data: userData
+    });
+  } catch (error) {
+    console.error("Update error:", error);
+    res.status(500).json({ message: "Gagal memperbarui profil" });
+  }
+};
+
+
+module.exports = { getProfile, updateUserProfile };
