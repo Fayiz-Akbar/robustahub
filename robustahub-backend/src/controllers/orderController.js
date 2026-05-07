@@ -191,4 +191,65 @@ const updateTrackingNumber = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber };
+// =========================================================================
+// FUNGSI BARU KHUSUS PETANI
+// =========================================================================
+
+// 1. Mengambil daftar pesanan yang masuk ke Petani
+const getIncomingOrders = async (req, res) => {
+  try {
+    const petaniId = req.user.id;
+    
+    // Cari order yang di dalamnya terdapat produk milik petani yang sedang login
+    const incomingOrders = await prisma.order.findMany({
+      where: {
+        items: {
+          some: {
+            product: { petaniId: petaniId }
+          }
+        }
+      },
+      include: {
+        items: {
+          include: { product: true }
+        },
+        payment: true,
+        shipment: true
+        // Jika di schema.prisma kamu ada relasi ke tabel User/Pembeli, 
+        // kamu bisa tambahkan: buyer: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({
+      message: 'Berhasil mengambil pesanan masuk!',
+      data: incomingOrders
+    });
+  } catch (error) {
+    console.error("Error saat mengambil pesanan masuk:", error);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+  }
+};
+
+// 2. Mengubah status pesanan tanpa nomor resi (Dari PAID -> SHIPPED)
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: id },
+      data: { status: status }
+    });
+
+    res.status(200).json({
+      message: `Status pesanan berhasil diubah menjadi ${status}!`,
+      data: updatedOrder
+    });
+  } catch (error) {
+    console.error("Error update status pesanan:", error);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server saat update status.' });
+  }
+};
+
+module.exports = { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber,getIncomingOrders, updateOrderStatus };

@@ -22,7 +22,7 @@ const PesananPetani = () => {
     setIsLoading(true);
     try {
       // Endpoint ini asumsikan sudah dibuat di backend (orderRoutes.js)
-      const response = await fetch('http://localhost:5000/api/orders', {
+     const response = await fetch('http://localhost:5000/api/orders/incoming', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import KatalogKopi from './pages/KatalogKopi';
 import DashboardPetani from './pages/DashboardPetani';
 import InventarisPetani from './pages/InventarisPetani';
+import PesananPetani from './pages/PesananPetani';
 
 // Membuat halaman dummy sementara untuk melihat hasil komponen
 const BerandaSementara = () => {
@@ -34,6 +35,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<DashboardPetani />} />
           <Route path="/inventaris" element={<InventarisPetani />} />
+          <Route path="/pesanan" element={<PesananPetani />} />
 
           {/* Rute lain (Nanti kita tambahkan Navbar di dalamnya) */}
           <Route path="/katalog" element={<KatalogKopi />} />
