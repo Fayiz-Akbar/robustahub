@@ -61,12 +61,14 @@ const Navbar = () => {
               {/* Keranjang & Notifikasi hanya untuk PEMBELI (COFFEE_SHOP) */}
               {userRole === 'COFFEE_SHOP' && (
                 <>
+                  {/* ICON KERANJANG SUDAH DIPERBAIKI (Tukar SVG) */}
                   <Link to="/keranjang" className="text-[#1A1D20] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                   </Link>
                   
+                  {/* ICON NOTIFIKASI/LONCENG SUDAH DIPERBAIKI (Tukar SVG) */}
                   <Link to="/notifikasi" className="relative text-[#1A1D20] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     <span className="absolute top-0 right-0 bg-[#A86431] text-white text-[10px] font-bold w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white">2</span>
                   </Link>
                 </>

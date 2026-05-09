@@ -8,6 +8,9 @@ import DashboardPetani from './pages/DashboardPetani';
 import InventarisPetani from './pages/InventarisPetani';
 import PesananPetani from './pages/PesananPetani';
 import PengaturanPetani from './pages/PengaturanPetani';
+import DetailProduk from './pages/DetailProduk';
+import KeranjangBelanja from './pages/KeranjangBelanja';
+import CheckoutPembayaran from './pages/CheckoutPembayaran';
 
 // Membuat halaman dummy sementara untuk melihat hasil komponen
 const BerandaSementara = () => {
@@ -38,6 +41,9 @@ function App() {
           <Route path="/inventaris" element={<InventarisPetani />} />
           <Route path="/pesanan" element={<PesananPetani />} />
           <Route path="/pengaturan" element={<PengaturanPetani />} />
+          <Route path="/produk/:id" element={<DetailProduk />} />
+          <Route path="/keranjang" element={<KeranjangBelanja />} />
+          <Route path="/checkout" element={<CheckoutPembayaran />} />
 
           {/* Rute lain (Nanti kita tambahkan Navbar di dalamnya) */}
           <Route path="/katalog" element={<KatalogKopi />} />

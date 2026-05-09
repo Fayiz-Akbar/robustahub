@@ -78,30 +78,43 @@ const updateProduct = async (req, res) => {
     } = req.body;
     const petaniId = req.user.id;
 
-    // 1. Cek apakah kopinya ada
     const existingProduct = await prisma.product.findUnique({ where: { id } });
     if (!existingProduct) {
       return res.status(404).json({ message: 'Katalog kopi tidak ditemukan!' });
     }
 
-    // 2. KEAMANAN: Pastikan ini kopi miliknya sendiri
     if (existingProduct.petaniId !== petaniId) {
       return res.status(403).json({ message: 'Akses Ditolak! Anda tidak berhak mengubah produk orang lain.' });
     }
 
-    // 3. Cek Gambar: Gunakan gambar baru jika diupload, jika tidak gunakan yang lama
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : existingProduct.imageUrl;
+    // 👇 UBAH LOGIKA GAMBAR DI SINI: Deteksi banyak foto (array)
+    let savedImageUrl = existingProduct.imageUrl; // Default pakai gambar lama
+    
+    if (req.files && req.files.length > 0) {
+      // Jika user mengunggah foto-foto baru, timpa yang lama
+      const imagePaths = req.files.map(file => `/uploads/${file.filename}`);
+      savedImageUrl = JSON.stringify(imagePaths); 
+    } else if (req.file) {
+      // Fallback jika sistem terbaca sebagai single file
+      savedImageUrl = `/uploads/${req.file.filename}`;
+    }
 
-    // 4. Siapkan data update (mengubah string dari form-data menjadi tipe data yang benar)
     const updateData = {
-        name, description, category, tastingNotes, processingMethod, elevation, defectRate, imageUrl
+        name, 
+        description, 
+        category, 
+        tastingNotes, 
+        processingMethod, 
+        elevation, 
+        defectRate, 
+        imageUrl: savedImageUrl // <-- Masukkan hasil olahan gambar ke database
     };
+    
     if (price) updateData.price = parseInt(price);
     if (stock) updateData.stock = parseInt(stock);
     if (minOrder) updateData.minOrder = parseInt(minOrder);
     if (isActive !== undefined) updateData.isActive = isActive === 'true' || isActive === true;
 
-    // 5. Simpan perubahan ke database
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: updateData
