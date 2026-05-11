@@ -13,6 +13,7 @@ import KeranjangBelanja from './pages/KeranjangBelanja';
 import CheckoutPembayaran from './pages/CheckoutPembayaran';
 import ProfilPembeli from './pages/ProfilPembeli';
 import RiwayatPesanan from './pages/RiwayatPesanan';
+import Notifikasi from './pages/Notifikasi';
 
 // Membuat halaman dummy sementara untuk melihat hasil komponen
 const BerandaSementara = () => {
@@ -51,6 +52,7 @@ function App() {
           <Route path="/katalog" element={<KatalogKopi />} />
           <Route path="/profil" element={<ProfilPembeli />} />
           <Route path="/riwayat" element={<RiwayatPesanan />} />
+          <Route path="/notifikasi" element={<Notifikasi />} />
         </Routes>
       </div>
     </Router>

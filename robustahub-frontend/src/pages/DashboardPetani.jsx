@@ -8,13 +8,13 @@ const DashboardPetani = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]); // State baru untuk menyimpan data pesanan
+  const [orders, setOrders] = useState([]); 
   
   // ==========================================
-  // STATE BARU UNTUK PAGINATION (TABEL KOPI)
+  // STATE UNTUK PAGINATION (TABEL KOPI)
   // ==========================================
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Batas 5 kopi per halaman
+  const itemsPerPage = 5; 
   
   // State form
   const [formData, setFormData] = useState({ 
@@ -67,7 +67,6 @@ const DashboardPetani = () => {
       navigate('/');
       return;
     }
-    // Panggil kedua fungsi saat halaman dimuat
     fetchMyProducts();
     fetchMyOrders();
   }, []);
@@ -106,7 +105,7 @@ const DashboardPetani = () => {
         setFormData({ name: '', price: '', stock: '', description: '', processingMethod: '', elevation: '', tastingNotes: '', category: 'ROBUSTA' }); 
         setImageFiles([]); 
         fetchMyProducts(); 
-        setCurrentPage(1); // Kembali ke halaman 1 setelah tambah kopi
+        setCurrentPage(1); 
       } else {
         const result = await response.json();
         alert(`Gagal: ${result.message}`);
@@ -137,6 +136,9 @@ const DashboardPetani = () => {
   // PERHITUNGAN STATISTIK DASHBOARD
   // ====================================================================
   const processingOrdersCount = orders.filter(order => order.status === 'PAID').length;
+  // Menghitung jumlah pesanan yang dibatalkan
+  const cancelledOrdersCount = orders.filter(order => order.status === 'CANCELLED').length;
+  // Pendapatan otomatis turun jika ada yang dibatalkan (karena tidak masuk ke array ini)
   const totalRevenue = orders
     .filter(order => ['PAID', 'SHIPPED', 'COMPLETED'].includes(order.status))
     .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
@@ -152,11 +154,7 @@ const DashboardPetani = () => {
   return (
     <div className="flex h-screen bg-[#F8F9FA] overflow-hidden font-sans text-[#1A1D20]">
       
-      <SidebarPetani 
-        isOpen={isSidebarOpen} 
-        setIsOpen={setIsSidebarOpen} 
-        activePage="dashboard" 
-      />
+      <SidebarPetani isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} activePage="dashboard" />
 
       <main className="flex-1 flex flex-col relative overflow-y-auto w-full">
         
@@ -171,20 +169,17 @@ const DashboardPetani = () => {
                 {initial}
               </div>
             </div>
-            <button 
-              onClick={() => setIsSidebarOpen(true)} 
-              className="lg:hidden p-2 text-[#3A2210] bg-[#F8F9FA] hover:bg-[#EFEFEF] rounded-lg transition-colors focus:outline-none"
-            >
-              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
-              </svg>
+            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 text-[#3A2210] bg-[#F8F9FA] hover:bg-[#EFEFEF] rounded-lg transition-colors focus:outline-none">
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
           </div>
         </header>
 
         <div className="p-5 lg:p-10 max-w-[1200px] mx-auto w-full box-border">
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          {/* UBAH GRID MENJADI 4 KOLOM AGAR KOTAK BATAL MUAT */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            
             {/* Kotak 1: Jumlah Kopi */}
             <div className="bg-white rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.04)] border border-[#EFEFEF] relative overflow-hidden flex flex-col min-h-[160px] transition-transform hover:-translate-y-1">
               <div className="p-6 relative z-10">
@@ -203,7 +198,7 @@ const DashboardPetani = () => {
                 <div className="text-[15px] text-[#6C757D] font-medium mb-3">Sedang Diproses</div>
                 <div className="text-[36px] font-bold text-[#1A1D20] mb-3">{processingOrdersCount}</div>
                 <div className="text-[13px] flex items-center gap-1.5 font-medium text-[#3B82F6]">
-                  Pesanan menunggu pengiriman <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                  Menunggu pengiriman <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
                 </div>
               </div>
               <svg className="absolute bottom-0 left-0 w-full translate-y-0.5 z-0" viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#EFF6FF" stroke="#3B82F6" d="M0,192L48,181.3C96,171,192,149,288,149.3C384,149,480,171,576,192C672,213,768,235,864,224C960,213,1056,171,1152,144C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
@@ -213,13 +208,26 @@ const DashboardPetani = () => {
             <div className="bg-white rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.04)] border border-[#EFEFEF] relative overflow-hidden flex flex-col min-h-[160px] transition-transform hover:-translate-y-1">
               <div className="p-6 relative z-10">
                 <div className="text-[15px] text-[#6C757D] font-medium mb-3">Selesai / Lunas</div>
-                <div className="text-[32px] font-bold text-[#1A1D20] mb-3">Rp {totalRevenue.toLocaleString('id-ID')}</div>
+                <div className="text-[28px] font-bold text-[#1A1D20] mb-3">Rp {totalRevenue.toLocaleString('id-ID')}</div>
                 <div className="text-[13px] flex items-center gap-1.5 font-medium text-[#10B981]">
-                  Pembayaran telah diverifikasi <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Telah diverifikasi <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
               </div>
               <svg className="absolute bottom-0 left-0 w-full translate-y-0.5 z-0" viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#ECFDF5" stroke="#10B981" d="M0,192L48,181.3C96,171,192,149,288,149.3C384,149,480,171,576,192C672,213,768,235,864,224C960,213,1056,171,1152,144C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
             </div>
+
+            {/* Kotak 4: Pesanan Batal */}
+            <div className="bg-white rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.04)] border border-[#EFEFEF] relative overflow-hidden flex flex-col min-h-[160px] transition-transform hover:-translate-y-1">
+              <div className="p-6 relative z-10">
+                <div className="text-[15px] text-[#6C757D] font-medium mb-3">Pesanan Batal</div>
+                <div className="text-[36px] font-bold text-[#1A1D20] mb-3">{cancelledOrdersCount}</div>
+                <div className="text-[13px] flex items-center gap-1.5 font-medium text-red-500">
+                  Dibatalkan oleh pembeli <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </div>
+              </div>
+              <svg className="absolute bottom-0 left-0 w-full translate-y-0.5 z-0" viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#FEF2F2" stroke="#EF4444" d="M0,192L48,181.3C96,171,192,149,288,149.3C384,149,480,171,576,192C672,213,768,235,864,224C960,213,1056,171,1152,144C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+            </div>
+            
           </div>
 
           {/* Tabel Inventaris Kopi */}
@@ -304,9 +312,7 @@ const DashboardPetani = () => {
               </table>
             </div>
             
-            {/* ========================================== */}
-            {/* KOMPONEN TOMBOL PAGINATION UNTUK TABEL     */}
-            {/* ========================================== */}
+            {/* Paginasi Tabel */}
             {totalPages > 1 && (
               <div className="p-6 border-t border-[#EFEFEF] bg-[#FAFAFA] flex flex-col sm:flex-row justify-between items-center">
                 <span className="text-[13px] text-[#6C757D] font-medium mb-4 sm:mb-0">
@@ -314,35 +320,17 @@ const DashboardPetani = () => {
                 </span>
                 
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] bg-white text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors cursor-pointer"
-                  >
+                  <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] bg-white text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors cursor-pointer">
                     &laquo; Prev
                   </button>
-                  
                   <div className="flex gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 rounded-lg text-[13px] font-bold flex items-center justify-center transition-colors cursor-pointer ${
-                          currentPage === page 
-                            ? 'bg-[#3A2210] text-white' 
-                            : 'bg-white text-[#6C757D] hover:bg-[#F8F9FA] border border-[#EFEFEF]'
-                        }`}
-                      >
+                      <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-lg text-[13px] font-bold flex items-center justify-center transition-colors cursor-pointer ${currentPage === page ? 'bg-[#3A2210] text-white' : 'bg-white text-[#6C757D] hover:bg-[#F8F9FA] border border-[#EFEFEF]'}`}>
                         {page}
                       </button>
                     ))}
                   </div>
-
-                  <button 
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] bg-white text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors cursor-pointer"
-                  >
+                  <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] bg-white text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors cursor-pointer">
                     Next &raquo;
                   </button>
                 </div>
@@ -353,11 +341,10 @@ const DashboardPetani = () => {
         </div>
       </main>
 
-      {/* ================= MODAL TAMBAH KOPI ================= */}
+      {/* MODAL TAMBAH KOPI FULL FORM */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
           <div className="bg-white w-full max-w-[600px] rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex flex-col max-h-[90vh]">
-            
             <div className="flex justify-between items-center p-6 border-b border-[#EFEFEF] shrink-0">
               <h3 className="m-0 text-[20px] font-bold text-[#3A2210]">Tambah Produk Kopi</h3>
               <button onClick={() => setIsModalOpen(false)} className="bg-none border-none text-[28px] text-[#6C757D] cursor-pointer leading-none hover:text-[#1A1D20]">&times;</button>
@@ -367,16 +354,8 @@ const DashboardPetani = () => {
               <form id="addProductForm" onSubmit={handleAddProduct}>
                 
                 <div className="mb-5">
-                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">
-                    Foto Produk <span className="text-[#6C757D] font-normal">(Opsional, bisa lebih dari 1)</span>
-                  </label>
-                  <input 
-                    type="file" 
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => setImageFiles(Array.from(e.target.files))}
-                    className="w-full text-sm text-[#6C757D] file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FDF9F5] file:text-[#A86431] hover:file:bg-[#F8F9FA] cursor-pointer border border-[#EFEFEF] p-2 rounded-lg" 
-                  />
+                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Foto Produk <span className="text-[#6C757D] font-normal">(Opsional, bisa lebih dari 1)</span></label>
+                  <input type="file" accept="image/*" multiple onChange={(e) => setImageFiles(Array.from(e.target.files))} className="w-full text-sm text-[#6C757D] file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FDF9F5] file:text-[#A86431] hover:file:bg-[#F8F9FA] cursor-pointer border border-[#EFEFEF] p-2 rounded-lg" />
                   {imageFiles.length > 0 && (
                     <p className="text-[13px] text-[#10B981] mt-2 font-medium">✓ {imageFiles.length} file gambar dipilih</p>
                   )}
@@ -384,104 +363,48 @@ const DashboardPetani = () => {
 
                 <div className="mb-5">
                   <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Kategori Kopi <span className="text-red-500">*</span></label>
-                  <select 
-                    required
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                    className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431] appearance-none cursor-pointer"
-                    style={{
-                      backgroundImage: `url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23717171%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 16px top 50%',
-                      backgroundSize: '12px auto'
-                    }}
-                  >
+                  <select required value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431] appearance-none cursor-pointer" style={{ backgroundImage: `url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23717171%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px top 50%', backgroundSize: '12px auto' }}>
                     <option value="ROBUSTA">Kopi Robusta</option>
                     <option value="ARABIKA">Kopi Arabika</option>
                     <option value="BLEND">House Blend / Campuran</option>
                   </select>
                 </div>
-                
+
                 <div className="mb-5">
                   <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Nama Kopi <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
-                    placeholder="Cth: Robusta Premium Natar" 
-                  />
+                  <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" placeholder="Cth: Robusta Premium Natar" />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
                   <div>
                     <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Harga per Kilogram (Rp) <span className="text-red-500">*</span></label>
-                    <input 
-                      type="number" 
-                      required
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: e.target.value})}
-                      className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
-                      placeholder="Cth: 45000" 
-                    />
+                    <input type="number" required value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" placeholder="Cth: 45000" />
                   </div>
                   <div>
                     <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Stok Tersedia (Kg) <span className="text-red-500">*</span></label>
-                    <input 
-                      type="number" 
-                      required
-                      value={formData.stock}
-                      onChange={(e) => setFormData({...formData, stock: e.target.value})}
-                      className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
-                      placeholder="Cth: 200" 
-                    />
+                    <input type="number" required value={formData.stock} onChange={(e) => setFormData({...formData, stock: e.target.value})} className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" placeholder="Cth: 200" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
                   <div>
-                    <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Proses Pascapanen <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
-                    <input 
-                      type="text" 
-                      value={formData.processingMethod}
-                      onChange={(e) => setFormData({...formData, processingMethod: e.target.value})}
-                      className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
-                      placeholder="Cth: Natural Process" 
-                    />
+                    <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Proses Pascapanen</label>
+                    <input type="text" value={formData.processingMethod} onChange={(e) => setFormData({...formData, processingMethod: e.target.value})} className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" placeholder="Cth: Natural Process" />
                   </div>
                   <div>
-                    <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Ketinggian Tanam <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
-                    <input 
-                      type="text" 
-                      value={formData.elevation}
-                      onChange={(e) => setFormData({...formData, elevation: e.target.value})}
-                      className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
-                      placeholder="Cth: 600 - 800 mdpl" 
-                    />
+                    <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Ketinggian Tanam</label>
+                    <input type="text" value={formData.elevation} onChange={(e) => setFormData({...formData, elevation: e.target.value})} className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" placeholder="Cth: 600 - 800 mdpl" />
                   </div>
                 </div>
 
                 <div className="mb-5">
-                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Tasting Notes <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
-                  <input 
-                    type="text" 
-                    value={formData.tastingNotes}
-                    onChange={(e) => setFormData({...formData, tastingNotes: e.target.value})}
-                    className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" 
-                    placeholder="Cth: Dark Choco, Nutty, Earthy" 
-                  />
+                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Tasting Notes</label>
+                  <input type="text" value={formData.tastingNotes} onChange={(e) => setFormData({...formData, tastingNotes: e.target.value})} className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431]" placeholder="Cth: Dark Choco, Nutty, Earthy" />
                 </div>
 
                 <div className="mb-2">
-                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Deskripsi Kopi <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
-                  <textarea 
-                    rows="3"
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431] resize-y" 
-                    placeholder="Ceritakan tentang biji kopi ini..." 
-                  ></textarea>
+                  <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Deskripsi Kopi</label>
+                  <textarea rows="3" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full py-3 px-4 border border-[#EFEFEF] rounded-lg font-sans text-[14px] outline-none focus:border-[#A86431] resize-y" placeholder="Ceritakan tentang biji kopi ini..."></textarea>
                 </div>
 
               </form>

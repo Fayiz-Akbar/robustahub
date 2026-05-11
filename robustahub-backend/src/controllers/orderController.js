@@ -48,7 +48,6 @@ const createOrder = async (req, res) => {
           items: {
             create: orderItemsData
           },
-          // Karena di schema.prisma kamu ada relasi Shipment
           shipment: {
             create: {
               shippingCost: shippingCost ? parseInt(shippingCost) : 0,
@@ -65,11 +64,11 @@ const createOrder = async (req, res) => {
     // 2. MINTA LINK PEMBAYARAN KE XENDIT
     const xenditInvoice = await Invoice.createInvoice({
       data: {
-        externalId: newOrder.id, // ID Order database kita
+        externalId: newOrder.id, 
         amount: newOrder.totalAmount,
         description: `Pembayaran Biji Kopi RobustaHub - Order ${newOrder.id}`,
-        successRedirectUrl: 'http://localhost:5173/riwayat-pesanan',
-        failureRedirectUrl: 'http://localhost:5173/keranjang-belanja',
+        successRedirectUrl: 'http://localhost:5173/riwayat',
+        failureRedirectUrl: 'http://localhost:5173/keranjang',
       }
     });
 
@@ -84,7 +83,7 @@ const createOrder = async (req, res) => {
       }
     });
 
-    // 4. KIRIM BALASAN KE POSTMAN / FRONTEND
+    // 4. KIRIM BALASAN KE FRONTEND
     res.status(201).json({
       message: 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.',
       paymentUrl: xenditInvoice.invoiceUrl,
@@ -106,7 +105,6 @@ const getMyOrders = async (req, res) => {
     const orders = await prisma.order.findMany({
       where: { buyerId: buyerId },
       include: {
-        // 👇 UBAH BARIS INI: dari { select: { name: true } } menjadi true saja
         items: { include: { product: true } }, 
         payment: true, 
         shipment: true
@@ -131,16 +129,25 @@ const xenditWebhook = async (req, res) => {
     const orderId = external_id;
 
     if (status === 'PAID' || status === 'SETTLED') {
-      // Ubah status order jadi PAID
-      await prisma.order.update({
+      const updatedOrder = await prisma.order.update({
         where: { id: orderId },
         data: { status: 'PAID' }
       });
 
-      // Ubah status payment jadi SUCCESS
       await prisma.payment.updateMany({
         where: { orderId: orderId },
         data: { status: 'SUCCESS' }
+      });
+
+      // NOTIFIKASI PEMBAYARAN BERHASIL (KE PEMBELI)
+      await prisma.notification.create({
+        data: {
+          userId: updatedOrder.buyerId,
+          title: "Pembayaran Berhasil!",
+          message: `Pembayaran sebesar Rp ${updatedOrder.totalAmount.toLocaleString('id-ID')} untuk pesanan #${orderId.substring(0,8).toUpperCase()} telah berhasil diverifikasi.`,
+          type: "success",
+          link: "/riwayat"
+        }
       });
 
       console.log(` HORE! Pesanan ${orderId} berhasil DIBAYAR LUNAS!`);
@@ -153,31 +160,34 @@ const xenditWebhook = async (req, res) => {
   }
 };
 
-// Fungsi untuk memproses pengiriman dan memasukkan nomor resi
 const updateTrackingNumber = async (req, res) => {
   try {
-    const { id } = req.params; // ID pesanan (OrderId)
-    
-    // UBAH DARI trackingNumber MENJADI waybillNumber
+    const { id } = req.params; 
     const { waybillNumber } = req.body;
 
     if (!waybillNumber) {
       return res.status(400).json({ message: 'Nomor resi tidak boleh kosong!' });
     }
 
-    // Ubah status order jadi SHIPPED dan simpan nomor resi ke tabel Shipment
     const updatedOrder = await prisma.order.update({
       where: { id: id },
       data: {
         status: 'SHIPPED',
         shipment: {
-          update: {
-            waybillNumber: waybillNumber // <-- PERBAIKAN DI SINI
-          }
+          update: { waybillNumber: waybillNumber }
         }
       },
-      include: {
-        shipment: true // Tampilkan data pengiriman di hasil respons
+      include: { shipment: true }
+    });
+
+    // NOTIFIKASI BARANG DIKIRIM (KE PEMBELI)
+    await prisma.notification.create({
+      data: {
+        userId: updatedOrder.buyerId,
+        title: "Pesanan Sedang Dikirim!",
+        message: `Pesanan Anda #${updatedOrder.id.substring(0,8).toUpperCase()} telah diserahkan ke ${updatedOrder.shipment.courierName} dengan resi ${waybillNumber}.`,
+        type: "delivery",
+        link: "/riwayat"
       }
     });
 
@@ -193,31 +203,24 @@ const updateTrackingNumber = async (req, res) => {
 };
 
 // =========================================================================
-// FUNGSI BARU KHUSUS PETANI
+// FUNGSI KHUSUS PETANI
 // =========================================================================
 
-// 1. Mengambil daftar pesanan yang masuk ke Petani
 const getIncomingOrders = async (req, res) => {
   try {
     const petaniId = req.user.id;
     
-    // Cari order yang di dalamnya terdapat produk milik petani yang sedang login
     const incomingOrders = await prisma.order.findMany({
       where: {
         items: {
-          some: {
-            product: { petaniId: petaniId }
-          }
+          some: { product: { petaniId: petaniId } }
         }
       },
       include: {
-        items: {
-          include: { product: true }
-        },
+        items: { include: { product: true } },
         payment: true,
-        shipment: true
-        // Jika di schema.prisma kamu ada relasi ke tabel User/Pembeli, 
-        // kamu bisa tambahkan: buyer: { select: { name: true } }
+        shipment: true,
+        buyer: { select: { name: true } } // Mengambil nama pembeli
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -232,7 +235,6 @@ const getIncomingOrders = async (req, res) => {
   }
 };
 
-// 2. Mengubah status pesanan tanpa nomor resi (Dari PAID -> SHIPPED)
 const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -256,51 +258,72 @@ const updateOrderStatus = async (req, res) => {
 const completeOrderForBuyer = async (req, res) => {
   try {
     const { id } = req.params;
+    
     const updatedOrder = await prisma.order.update({
       where: { id: id },
-      data: { status: 'COMPLETED' }
+      data: { status: 'COMPLETED' },
+      include: { items: { include: { product: true } } }
     });
+
+    // NOTIFIKASI PESANAN SELESAI (KE PETANI)
+    const petaniId = updatedOrder.items[0].product.petaniId;
+    await prisma.notification.create({
+      data: {
+        userId: petaniId,
+        title: "Pesanan Selesai!",
+        message: `Pembeli telah menerima pesanan #${id.substring(0,8).toUpperCase()}. Dana otomatis diteruskan ke saldo Anda.`,
+        type: "success",
+        link: "/pesanan-masuk"
+      }
+    });
+
     res.status(200).json({ message: 'Pesanan telah selesai', data: updatedOrder });
   } catch (error) {
-    // Tambahkan baris ini agar error tercatat di terminal
     console.error("Error dari Backend saat Pesanan Diterima:", error); 
     res.status(500).json({ message: 'Terjadi kesalahan pada database.' });
   }
 };
 
-// Fungsi untuk membatalkan pesanan oleh pembeli
 const cancelOrderBuyer = async (req, res) => {
   try {
     const { id } = req.params;
     const { cancelReason } = req.body;
 
-    // 1. Cari pesanan
     const order = await prisma.order.findUnique({
       where: { id },
-      include: { items: true } // Ambil produknya untuk kembalikan stok
+      include: { items: { include: { product: true } } }
     });
 
     if (!order) return res.status(404).json({ message: "Pesanan tidak ditemukan" });
 
-    // 2. Pastikan hanya PENDING dan PAID yang bisa dibatalkan
     if (order.status !== 'PENDING' && order.status !== 'PAID') {
       return res.status(400).json({ message: "Pesanan sudah diproses, tidak bisa dibatalkan." });
     }
 
-    // 3. KEMBALIKAN STOK KOPI KE PETANI (Sangat Penting!)
     for (let item of order.items) {
       await prisma.product.update({
         where: { id: item.productId },
-        data: { stock: { increment: item.quantity } } // Tambahkan kembali stoknya
+        data: { stock: { increment: item.quantity } } 
       });
     }
 
-    // 4. Ubah status jadi CANCELLED dan simpan alasannya
     const updatedOrder = await prisma.order.update({
       where: { id },
       data: { 
         status: 'CANCELLED',
         cancelReason: cancelReason || 'Dibatalkan oleh pembeli'
+      }
+    });
+
+    // NOTIFIKASI PESANAN BATAL (KE PETANI)
+    const petaniId = order.items[0].product.petaniId;
+    await prisma.notification.create({
+      data: {
+        userId: petaniId,
+        title: "Pesanan Dibatalkan Pembeli",
+        message: `Pesanan #${id.substring(0,8).toUpperCase()} telah dibatalkan. Alasan: ${cancelReason || 'Lainnya'}. Stok otomatis dikembalikan.`,
+        type: "warning",
+        link: "/pesanan-masuk"
       }
     });
 
@@ -311,4 +334,4 @@ const cancelOrderBuyer = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber,getIncomingOrders, updateOrderStatus, completeOrderForBuyer, cancelOrderBuyer };
+module.exports = { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber, getIncomingOrders, updateOrderStatus, completeOrderForBuyer, cancelOrderBuyer };

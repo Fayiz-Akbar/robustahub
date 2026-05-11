@@ -21,8 +21,8 @@ model Pengguna {
   phone     String?
   address   String?    @db.Text
   shopName  String?  
-  description String?    @db.Text   // <-- Tambahkan ini
-  shopImage   String?               // <-- Tambahkan ini (Untuk foto toko)
+  description String?    @db.Text   
+  shopImage   String?               
   
   // Data Rekening
   bankName          String?
@@ -32,6 +32,7 @@ model Pengguna {
   // Relasi
   products  Product[] 
   orders    Order[]    
+  notifications Notification[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -94,7 +95,7 @@ model Order {
   buyer       Pengguna        @relation(fields: [buyerId], references: [id])
   
   cancelReason  String?
-  
+
   // Relasi ke tabel lain
   items       OrderItem[]
   payment     Payment?    // 1 Order punya 1 Pembayaran
@@ -134,9 +135,9 @@ model OrderItem {
 model Payment {
   id               String        @id @default(uuid())
   amount           Int
-  xenditInvoiceId  String?       @unique // Diubah dari midtransTransId
-  paymentUrl       String?       // Link invoice Xendit untuk diklik pembeli
-  paymentType      String?       // e.g., BANK_TRANSFER, E_WALLET
+  xenditInvoiceId  String?       @unique 
+  paymentUrl       String?       
+  paymentType      String?       
   status           PaymentStatus @default(PENDING)
   paidAt           DateTime?
   
@@ -177,4 +178,20 @@ enum ShipmentStatus {
   PENDING
   SHIPPED
   DELIVERED
+}
+
+// ==============================
+// 7. TABEL NOTIFIKASI
+// ==============================
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  link      String?  
+  createdAt DateTime @default(now())
+
+  user      Pengguna @relation(fields: [userId], references: [id])
 }
