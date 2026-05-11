@@ -10,6 +10,12 @@ const DashboardPetani = () => {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]); // State baru untuk menyimpan data pesanan
   
+  // ==========================================
+  // STATE BARU UNTUK PAGINATION (TABEL KOPI)
+  // ==========================================
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Batas 5 kopi per halaman
+  
   // State form
   const [formData, setFormData] = useState({ 
     name: '', price: '', stock: '', 
@@ -38,7 +44,7 @@ const DashboardPetani = () => {
     }
   };
 
-  // 2. Fungsi Mengambil Data Pesanan (BARU)
+  // 2. Fungsi Mengambil Data Pesanan
   const fetchMyOrders = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/orders/incoming', {
@@ -100,6 +106,7 @@ const DashboardPetani = () => {
         setFormData({ name: '', price: '', stock: '', description: '', processingMethod: '', elevation: '', tastingNotes: '', category: 'ROBUSTA' }); 
         setImageFiles([]); 
         fetchMyProducts(); 
+        setCurrentPage(1); // Kembali ke halaman 1 setelah tambah kopi
       } else {
         const result = await response.json();
         alert(`Gagal: ${result.message}`);
@@ -127,16 +134,20 @@ const DashboardPetani = () => {
   };
 
   // ====================================================================
-  // PERHITUNGAN STATISTIK DASHBOARD (BARU)
+  // PERHITUNGAN STATISTIK DASHBOARD
   // ====================================================================
-  
-  // Hitung jumlah pesanan yang statusnya 'PAID' (Sudah dibayar, perlu diproses)
   const processingOrdersCount = orders.filter(order => order.status === 'PAID').length;
-  
-  // Hitung total pendapatan dari pesanan yang sudah lunas (PAID, SHIPPED, COMPLETED)
   const totalRevenue = orders
     .filter(order => ['PAID', 'SHIPPED', 'COMPLETED'].includes(order.status))
     .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+  // ====================================================================
+  // LOGIKA MATEMATIKA PAGINATION (TABEL KOPI)
+  // ====================================================================
+  const indexOfLastProduct = currentPage * itemsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(products.length / itemsPerPage);
 
   return (
     <div className="flex h-screen bg-[#F8F9FA] overflow-hidden font-sans text-[#1A1D20]">
@@ -212,7 +223,7 @@ const DashboardPetani = () => {
           </div>
 
           {/* Tabel Inventaris Kopi */}
-          <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-black/5 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-[#EFEFEF] overflow-hidden">
             <div className="p-6 md:px-8 border-b border-[#EFEFEF] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <h3 className="text-[18px] font-bold text-[#1A1D20] m-0">Daftar Kopi Anda</h3>
               <button onClick={() => setIsModalOpen(true)} className="w-full md:w-auto bg-[#3A2210] text-white border-none py-3 px-5 rounded-lg font-semibold text-[14px] cursor-pointer transition-all hover:bg-[#A86431] hover:shadow-[0_6px_15px_rgba(168,100,49,0.3)] flex items-center justify-center gap-2">
@@ -237,7 +248,7 @@ const DashboardPetani = () => {
                       <td colSpan="4" className="py-10 text-center text-gray-500">Anda belum menambahkan produk kopi apapun.</td>
                     </tr>
                   ) : (
-                    products.map((item) => {
+                    currentProducts.map((item) => {
                       const backendUrl = "http://localhost:5000";
                       let finalImageUrl = "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=500&q=80";
 
@@ -292,6 +303,52 @@ const DashboardPetani = () => {
                 </tbody>
               </table>
             </div>
+            
+            {/* ========================================== */}
+            {/* KOMPONEN TOMBOL PAGINATION UNTUK TABEL     */}
+            {/* ========================================== */}
+            {totalPages > 1 && (
+              <div className="p-6 border-t border-[#EFEFEF] bg-[#FAFAFA] flex flex-col sm:flex-row justify-between items-center">
+                <span className="text-[13px] text-[#6C757D] font-medium mb-4 sm:mb-0">
+                  Menampilkan {indexOfFirstProduct + 1} - {Math.min(indexOfLastProduct, products.length)} dari {products.length} kopi
+                </span>
+                
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] bg-white text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors cursor-pointer"
+                  >
+                    &laquo; Prev
+                  </button>
+                  
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 rounded-lg text-[13px] font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                          currentPage === page 
+                            ? 'bg-[#3A2210] text-white' 
+                            : 'bg-white text-[#6C757D] hover:bg-[#F8F9FA] border border-[#EFEFEF]'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] bg-white text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors cursor-pointer"
+                  >
+                    Next &raquo;
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       </main>
