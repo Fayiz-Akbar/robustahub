@@ -8,8 +8,9 @@ const DashboardPetani = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]); // State baru untuk menyimpan data pesanan
   
-  // State disesuaikan dengan skema Prisma (termasuk tastingNotes & processingMethod)
+  // State form
   const [formData, setFormData] = useState({ 
     name: '', price: '', stock: '', 
     description: '', processingMethod: '', elevation: '', tastingNotes: '',
@@ -22,6 +23,7 @@ const DashboardPetani = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const initial = user?.name ? user.name.substring(0, 2).toUpperCase() : 'PT';
 
+  // 1. Fungsi Mengambil Data Kopi
   const fetchMyProducts = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/products');
@@ -32,7 +34,24 @@ const DashboardPetani = () => {
         setProducts(myProducts);
       }
     } catch (error) {
-      console.error("Gagal mengambil data:", error);
+      console.error("Gagal mengambil data produk:", error);
+    }
+  };
+
+  // 2. Fungsi Mengambil Data Pesanan (BARU)
+  const fetchMyOrders = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/orders/incoming', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setOrders(result.data);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data pesanan:", error);
     }
   };
 
@@ -42,7 +61,9 @@ const DashboardPetani = () => {
       navigate('/');
       return;
     }
+    // Panggil kedua fungsi saat halaman dimuat
     fetchMyProducts();
+    fetchMyOrders();
   }, []);
 
   const handleAddProduct = async (e) => {
@@ -52,10 +73,9 @@ const DashboardPetani = () => {
     dataToSend.append('name', formData.name);
     dataToSend.append('price', parseInt(formData.price));
     dataToSend.append('stock', parseInt(formData.stock));
-    dataToSend.append('minOrder', 5); // Mengikuti default schema Prisma
+    dataToSend.append('minOrder', 5); 
     dataToSend.append('category', formData.category);
     
-    // Field Tambahan (Opsional)
     if (formData.description) dataToSend.append('description', formData.description);
     if (formData.processingMethod) dataToSend.append('processingMethod', formData.processingMethod);
     if (formData.elevation) dataToSend.append('elevation', formData.elevation);
@@ -77,8 +97,7 @@ const DashboardPetani = () => {
       if (response.ok) {
         alert('Kopi berhasil ditambahkan ke Etalase!');
         setIsModalOpen(false);
-        // Kosongkan seluruh form, kembalikan kategori ke ROBUSTA
-        setFormData({ name: '', price: '', stock: '', description: '', processingMethod: '', elevation: '', tastingNotes: '', category: 'ROBUSTA' }); // <-- UPDATE INI
+        setFormData({ name: '', price: '', stock: '', description: '', processingMethod: '', elevation: '', tastingNotes: '', category: 'ROBUSTA' }); 
         setImageFiles([]); 
         fetchMyProducts(); 
       } else {
@@ -107,6 +126,18 @@ const DashboardPetani = () => {
     }
   };
 
+  // ====================================================================
+  // PERHITUNGAN STATISTIK DASHBOARD (BARU)
+  // ====================================================================
+  
+  // Hitung jumlah pesanan yang statusnya 'PAID' (Sudah dibayar, perlu diproses)
+  const processingOrdersCount = orders.filter(order => order.status === 'PAID').length;
+  
+  // Hitung total pendapatan dari pesanan yang sudah lunas (PAID, SHIPPED, COMPLETED)
+  const totalRevenue = orders
+    .filter(order => ['PAID', 'SHIPPED', 'COMPLETED'].includes(order.status))
+    .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
   return (
     <div className="flex h-screen bg-[#F8F9FA] overflow-hidden font-sans text-[#1A1D20]">
       
@@ -118,13 +149,10 @@ const DashboardPetani = () => {
 
       <main className="flex-1 flex flex-col relative overflow-y-auto w-full">
         
-        {/* ================= HEADER (Hamburger Kanan di Mobile) ================= */}
         <header className="bg-white h-[80px] px-5 lg:px-10 flex justify-between items-center border-b border-[#EFEFEF] sticky top-0 z-50">
-          
           <div className="text-[18px] lg:text-[22px] font-bold text-[#1A1D20]">
-            Dashboard & Inventaris
+            Dashboard Utama
           </div>
-
           <div className="flex items-center gap-4">
             <div className="hidden lg:flex items-center gap-3 font-semibold text-[#1A1D20] px-4 py-2 bg-[#F8F9FA] rounded-full cursor-default">
               <span>{user.name}</span>
@@ -132,8 +160,6 @@ const DashboardPetani = () => {
                 {initial}
               </div>
             </div>
-
-            {/* Tombol Hamburger di Kanan */}
             <button 
               onClick={() => setIsSidebarOpen(true)} 
               className="lg:hidden p-2 text-[#3A2210] bg-[#F8F9FA] hover:bg-[#EFEFEF] rounded-lg transition-colors focus:outline-none"
@@ -143,12 +169,12 @@ const DashboardPetani = () => {
               </svg>
             </button>
           </div>
-
         </header>
 
         <div className="p-5 lg:p-10 max-w-[1200px] mx-auto w-full box-border">
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            {/* Kotak 1: Jumlah Kopi */}
             <div className="bg-white rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.04)] border border-[#EFEFEF] relative overflow-hidden flex flex-col min-h-[160px] transition-transform hover:-translate-y-1">
               <div className="p-6 relative z-10">
                 <div className="text-[15px] text-[#6C757D] font-medium mb-3">Jumlah Kopi Tersedia</div>
@@ -160,10 +186,11 @@ const DashboardPetani = () => {
               <svg className="absolute bottom-0 left-0 w-full translate-y-0.5 z-0" viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#FFFBEB" stroke="#F59E0B" d="M0,192L48,181.3C96,171,192,149,288,149.3C384,149,480,171,576,192C672,213,768,235,864,224C960,213,1056,171,1152,144C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
             </div>
 
+            {/* Kotak 2: Sedang Diproses */}
             <div className="bg-white rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.04)] border border-[#EFEFEF] relative overflow-hidden flex flex-col min-h-[160px] transition-transform hover:-translate-y-1">
               <div className="p-6 relative z-10">
                 <div className="text-[15px] text-[#6C757D] font-medium mb-3">Sedang Diproses</div>
-                <div className="text-[36px] font-bold text-[#1A1D20] mb-3">0</div>
+                <div className="text-[36px] font-bold text-[#1A1D20] mb-3">{processingOrdersCount}</div>
                 <div className="text-[13px] flex items-center gap-1.5 font-medium text-[#3B82F6]">
                   Pesanan menunggu pengiriman <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 </div>
@@ -171,10 +198,11 @@ const DashboardPetani = () => {
               <svg className="absolute bottom-0 left-0 w-full translate-y-0.5 z-0" viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#EFF6FF" stroke="#3B82F6" d="M0,192L48,181.3C96,171,192,149,288,149.3C384,149,480,171,576,192C672,213,768,235,864,224C960,213,1056,171,1152,144C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
             </div>
 
+            {/* Kotak 3: Pendapatan Lunas */}
             <div className="bg-white rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.04)] border border-[#EFEFEF] relative overflow-hidden flex flex-col min-h-[160px] transition-transform hover:-translate-y-1">
               <div className="p-6 relative z-10">
                 <div className="text-[15px] text-[#6C757D] font-medium mb-3">Selesai / Lunas</div>
-                <div className="text-[36px] font-bold text-[#1A1D20] mb-3">Rp 0</div>
+                <div className="text-[32px] font-bold text-[#1A1D20] mb-3">Rp {totalRevenue.toLocaleString('id-ID')}</div>
                 <div className="text-[13px] flex items-center gap-1.5 font-medium text-[#10B981]">
                   Pembayaran telah diverifikasi <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
@@ -183,6 +211,7 @@ const DashboardPetani = () => {
             </div>
           </div>
 
+          {/* Tabel Inventaris Kopi */}
           <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-black/5 overflow-hidden">
             <div className="p-6 md:px-8 border-b border-[#EFEFEF] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <h3 className="text-[18px] font-bold text-[#1A1D20] m-0">Daftar Kopi Anda</h3>
@@ -214,7 +243,6 @@ const DashboardPetani = () => {
 
                       if (item.imageUrl) {
                         try {
-                          // Coba parse jika formatnya berupa JSON array string seperti '["/uploads/file.jpg"]'
                           const parsedImage = JSON.parse(item.imageUrl);
                           if (Array.isArray(parsedImage) && parsedImage.length > 0) {
                             finalImageUrl = `${backendUrl}${parsedImage[0]}`;
@@ -222,7 +250,6 @@ const DashboardPetani = () => {
                             finalImageUrl = `${backendUrl}${item.imageUrl}`;
                           }
                         } catch (e) {
-                          // Jika error saat diparse, berarti stringnya sudah bersih '/uploads/file.jpg'
                           finalImageUrl = `${backendUrl}${item.imageUrl}`;
                         }
                       }
@@ -269,7 +296,7 @@ const DashboardPetani = () => {
         </div>
       </main>
 
-      {/* ================= MODAL TAMBAH KOPI (DIUPDATE) ================= */}
+      {/* ================= MODAL TAMBAH KOPI ================= */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
           <div className="bg-white w-full max-w-[600px] rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex flex-col max-h-[90vh]">
@@ -279,11 +306,9 @@ const DashboardPetani = () => {
               <button onClick={() => setIsModalOpen(false)} className="bg-none border-none text-[28px] text-[#6C757D] cursor-pointer leading-none hover:text-[#1A1D20]">&times;</button>
             </div>
             
-            {/* Area Form Scrollable */}
             <div className="p-6 overflow-y-auto">
               <form id="addProductForm" onSubmit={handleAddProduct}>
                 
-                {/* Upload Foto */}
                 <div className="mb-5">
                   <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">
                     Foto Produk <span className="text-[#6C757D] font-normal">(Opsional, bisa lebih dari 1)</span>
@@ -300,8 +325,6 @@ const DashboardPetani = () => {
                   )}
                 </div>
 
-
-                {/* Kategori Kopi */}
                 <div className="mb-5">
                   <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Kategori Kopi <span className="text-red-500">*</span></label>
                   <select 
@@ -322,7 +345,6 @@ const DashboardPetani = () => {
                   </select>
                 </div>
                 
-                {/* Nama Kopi */}
                 <div className="mb-5">
                   <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Nama Kopi <span className="text-red-500">*</span></label>
                   <input 
@@ -335,7 +357,6 @@ const DashboardPetani = () => {
                   />
                 </div>
 
-                {/* Harga & Stok */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
                   <div>
                     <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Harga per Kilogram (Rp) <span className="text-red-500">*</span></label>
@@ -361,7 +382,6 @@ const DashboardPetani = () => {
                   </div>
                 </div>
 
-                {/* Pascapanen & Ketinggian (Opsional) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
                   <div>
                     <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Proses Pascapanen <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
@@ -385,7 +405,6 @@ const DashboardPetani = () => {
                   </div>
                 </div>
 
-                {/* Tasting Notes (Opsional) */}
                 <div className="mb-5">
                   <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Tasting Notes <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
                   <input 
@@ -397,7 +416,6 @@ const DashboardPetani = () => {
                   />
                 </div>
 
-                {/* Deskripsi */}
                 <div className="mb-2">
                   <label className="block text-[14px] font-semibold mb-2 text-[#1A1D20]">Deskripsi Kopi <span className="text-[#6C757D] font-normal">(Opsional)</span></label>
                   <textarea 

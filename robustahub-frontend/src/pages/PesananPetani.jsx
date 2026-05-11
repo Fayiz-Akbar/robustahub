@@ -10,7 +10,7 @@ const PesananPetani = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // State untuk Filter Tab (Semua, Menunggu, Diproses, Selesai)
+  // State untuk Filter Tab
   const [activeTab, setActiveTab] = useState('SEMUA');
   
   const token = localStorage.getItem('token');
@@ -21,8 +21,7 @@ const PesananPetani = () => {
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      // Endpoint ini asumsikan sudah dibuat di backend (orderRoutes.js)
-     const response = await fetch('http://localhost:5000/api/orders/incoming', {
+      const response = await fetch('http://localhost:5000/api/orders/incoming', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -30,7 +29,6 @@ const PesananPetani = () => {
       
       if (response.ok) {
         const result = await response.json();
-        // Menyimpan data pesanan yang masuk ke petani ini
         setOrders(result.data.reverse()); 
       }
     } catch (error) {
@@ -49,29 +47,38 @@ const PesananPetani = () => {
     fetchOrders();
   }, []);
 
-  // Fungsi untuk Update Status Pesanan (Misal: Dari 'PAID' menjadi 'SHIPPED')
-  const handleUpdateStatus = async (orderId, newStatus) => {
-    if (!window.confirm(`Yakin ingin mengubah status pesanan ini menjadi ${newStatus}?`)) return;
+  // =========================================================================
+  // FUNGSI BARU: Kirim Pesanan & Input Resi
+  // =========================================================================
+  const handleKirimPesanan = async (orderId) => {
+    // 1. Munculkan popup untuk meminta nomor resi dari petani
+    const inputResi = window.prompt("Masukkan Nomor Resi Pengiriman Kargo/Kurir (contoh: DAKOTA-12345):");
+    
+    // Jika petani menekan 'Cancel' atau membiarkan kosong, batalkan proses
+    if (!inputResi) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
-        method: 'PATCH',
+      // 2. Tembak endpoint PUT /api/orders/:id/ship
+      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/ship`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ status: newStatus })
+        // Pastikan variabelnya bernama 'waybillNumber' sesuai backend
+        body: JSON.stringify({ waybillNumber: inputResi }) 
       });
 
       if (response.ok) {
-        alert('Status pesanan berhasil diperbarui!');
-        fetchOrders(); // Refresh data
+        alert('Pesanan berhasil dikirim dan nomor resi telah disimpan!');
+        fetchOrders(); // Refresh data tabel
       } else {
         const result = await response.json();
-        alert(`Gagal: ${result.message}`);
+        alert(`Gagal mengirim pesanan: ${result.message}`);
       }
     } catch (error) {
-      alert('Terjadi kesalahan pada server.');
+      console.error("Error saat kirim pesanan:", error);
+      alert('Terjadi kesalahan pada server saat menghubungi backend.');
     }
   };
 
@@ -183,7 +190,7 @@ const PesananPetani = () => {
                         Order ID: <span className="font-bold text-[#3A2210]">#{order.id.substring(0,8).toUpperCase()}</span>
                       </div>
                       <div className="text-[14px] font-bold text-[#1A1D20]">
-                        Pembeli: {order.user?.name || 'Kedai Kopi Senja'} {/* Ganti dgn nama pembeli asli */}
+                        Pembeli: {order.user?.name || 'Kedai Kopi Senja'} 
                       </div>
                     </div>
                     <div className="flex flex-col sm:items-end gap-2">
@@ -196,10 +203,9 @@ const PesananPetani = () => {
 
                   {/* Order Body (Items) */}
                   <div className="p-6">
-                    {order.orderItems?.map((item, idx) => (
+                    {order.items?.map((item, idx) => (
                       <div key={idx} className="flex gap-4 mb-4 pb-4 border-b border-[#EFEFEF] last:border-0 last:mb-0 last:pb-0">
                         <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
-                          {/* Asumsi format gambar sama seperti di Inventaris */}
                           <img 
                             src={item.product?.imageUrl ? `http://localhost:5000${JSON.parse(item.product.imageUrl)[0] || item.product.imageUrl}` : 'https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=100&q=80'} 
                             alt={item.product?.name} 
@@ -209,10 +215,10 @@ const PesananPetani = () => {
                         </div>
                         <div className="flex-1">
                           <h4 className="font-bold text-[#1A1D20] text-[15px] m-0 mb-1">{item.product?.name || 'Nama Produk'}</h4>
-                          <div className="text-[13px] text-[#6C757D] mb-2">{item.quantity} Kg x Rp {(item.price || 0).toLocaleString('id-ID')}</div>
+                          <div className="text-[13px] text-[#6C757D] mb-2">{item.quantity} Kg x Rp {(item.priceAtBuy || item.product?.price || 0).toLocaleString('id-ID')}</div>
                         </div>
                         <div className="font-bold text-[#A86431] text-[15px]">
-                          Rp {(item.quantity * item.price).toLocaleString('id-ID')}
+                          Rp {(item.quantity * (item.priceAtBuy || item.product?.price || 0)).toLocaleString('id-ID')}
                         </div>
                       </div>
                     ))}
@@ -221,7 +227,7 @@ const PesananPetani = () => {
                   {/* Order Footer */}
                   <div className="px-6 py-5 border-t border-[#EFEFEF] flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white">
                     <div>
-                      <div className="text-[13px] text-[#6C757D] font-medium mb-1">Total Pendapatan</div>
+                      <div className="text-[13px] text-[#6C757D] font-medium mb-1">Total Tagihan (Termasuk Ongkir & Biaya Layanan)</div>
                       <div className="text-[20px] font-bold text-[#1A1D20]">Rp {(order.totalAmount || 0).toLocaleString('id-ID')}</div>
                     </div>
                     
@@ -229,8 +235,8 @@ const PesananPetani = () => {
                     <div className="flex gap-3 w-full sm:w-auto">
                       {order.status === 'PAID' && (
                         <button 
-                          onClick={() => handleUpdateStatus(order.id, 'SHIPPED')}
-                          className="w-full sm:w-auto px-6 py-2.5 bg-[#A86431] hover:bg-[#8A5126] text-white rounded-lg font-semibold text-[14px] transition-colors shadow-sm"
+                          onClick={() => handleKirimPesanan(order.id)}
+                          className="w-full sm:w-auto px-6 py-2.5 bg-[#3A2210] hover:bg-[#A86431] text-white rounded-lg font-semibold text-[14px] transition-colors shadow-sm"
                         >
                           Kirim Pesanan
                         </button>

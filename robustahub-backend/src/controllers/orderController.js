@@ -17,7 +17,7 @@ const createOrder = async (req, res) => {
 
     // 1. SIMPAN KE DATABASE (Menggunakan Prisma Transaction)
     const newOrder = await prisma.$transaction(async (tx) => {
-      let totalAmount = shippingCost ? parseInt(shippingCost) : 0;
+      let totalAmount = (shippingCost ? parseInt(shippingCost) : 0) + 5000;
       let orderItemsData = [];
 
       for (let item of items) {
