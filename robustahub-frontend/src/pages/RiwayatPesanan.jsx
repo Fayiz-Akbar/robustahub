@@ -8,18 +8,18 @@ const RiwayatPesanan = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('SEMUA');
   
-  // State untuk Paginasi
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-
-  // State Dropdown Resi
   const [expandedResi, setExpandedResi] = useState(null);
 
-  // ==========================================
-  // STATE BARU: Custom Pop-up & Toast Notification
-  // ==========================================
+  // State Modal Pembatalan & Selesai
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, orderId: null });
+  const [cancelModal, setCancelModal] = useState({ isOpen: false, orderId: null });
   const [toast, setToast] = useState({ isOpen: false, message: '', type: 'success' });
+
+  // State Alasan Batal
+  const [cancelReason, setCancelReason] = useState('Ingin mengubah alamat pengiriman');
+  const [customReason, setCustomReason] = useState('');
 
   const token = localStorage.getItem('token');
 
@@ -41,10 +41,7 @@ const RiwayatPesanan = () => {
   };
 
   useEffect(() => {
-    if (!token) {
-      navigate('/');
-      return;
-    }
+    if (!token) { navigate('/'); return; }
     fetchOrders();
   }, []);
 
@@ -53,49 +50,73 @@ const RiwayatPesanan = () => {
     setExpandedResi(null); 
   }, [activeTab]);
 
-  // Fungsi untuk memunculkan Toast Notifikasi
   const showToast = (message, type = 'success') => {
     setToast({ isOpen: true, message, type });
-    setTimeout(() => setToast({ isOpen: false, message: '', type: 'success' }), 3500); // Hilang dalam 3.5 detik
+    setTimeout(() => setToast({ isOpen: false, message: '', type: 'success' }), 3500);
   };
 
-  // Fungsi Pemicu Pop-up Konfirmasi
-  const triggerPesananDiterima = (orderId) => {
-    setConfirmModal({ isOpen: true, orderId });
-  };
-
-  // Fungsi EKSEKUSI saat menekan "Ya, Selesaikan" di Pop-up
-  // Fungsi EKSEKUSI saat menekan "Ya, Selesaikan" di Pop-up
   const executePesananDiterima = async () => {
     const orderId = confirmModal.orderId;
-    setConfirmModal({ isOpen: false, orderId: null }); // Tutup pop-up
+    setConfirmModal({ isOpen: false, orderId: null }); 
     
     try {
-      // Kita ganti method menjadi PUT dan pastikan Content-Type terkirim
       const response = await fetch(`http://localhost:5000/api/orders/${orderId}/complete`, {
-        method: 'PUT', 
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        }
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
       
       if (response.ok) {
         showToast('Terima kasih! Pesanan telah diselesaikan.', 'success');
         fetchOrders(); 
       } else {
-        // Logika aman untuk membaca pesan error
+        const errorData = await response.json();
+        showToast(`Gagal: ${errorData.message}`, 'error');
+      }
+    } catch (error) {
+      showToast('Koneksi terputus. Pastikan server backend Anda menyala.', 'error');
+    }
+  };
+
+  // ==========================================
+  // FUNGSI EKSEKUSI BATAL PESANAN (DIPERBAIKI)
+  // ==========================================
+  const executeBatalPesanan = async () => {
+    const orderId = cancelModal.orderId;
+    const finalReason = cancelReason === 'Lainnya' ? customReason : cancelReason;
+
+    if (cancelReason === 'Lainnya' && !customReason.trim()) {
+      showToast('Harap tuliskan alasan pembatalan Anda.', 'error');
+      return;
+    }
+
+    setCancelModal({ isOpen: false, orderId: null }); 
+    
+    try {
+      // UBAH method menjadi PUT
+      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/cancel`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cancelReason: finalReason })
+      });
+      
+      if (response.ok) {
+        showToast('Pesanan berhasil dibatalkan. Stok telah dikembalikan.', 'success');
+        setCancelReason('Ingin mengubah alamat pengiriman');
+        setCustomReason('');
+        fetchOrders(); 
+      } else {
+        // PENANGKAP ERROR YANG LEBIH AMAN
         const errorText = await response.text();
         try {
           const errorData = JSON.parse(errorText);
           showToast(`Gagal: ${errorData.message}`, 'error');
         } catch (e) {
-          showToast(`Error 500: Server gagal memproses permintaan.`, 'error');
+          showToast(`Error Server. Cek Terminal Backend!`, 'error');
         }
       }
     } catch (error) {
-      console.error("Network Error:", error);
-      showToast(`Error Jaringan: ${error.message}`, 'error');
+      console.error(error);
+      showToast('Terjadi kesalahan koneksi jaringan.', 'error');
     }
   };
 
@@ -148,7 +169,7 @@ const RiwayatPesanan = () => {
         </div>
 
         <div className="flex gap-4 mb-6 overflow-x-auto pb-2 border-b border-[#EFEFEF] hide-scrollbar">
-          {['SEMUA', 'PENDING', 'PAID', 'SHIPPED', 'COMPLETED'].map((tab) => (
+          {['SEMUA', 'PENDING', 'PAID', 'SHIPPED', 'COMPLETED', 'CANCELLED'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -159,10 +180,11 @@ const RiwayatPesanan = () => {
               }`}
             >
               {tab === 'SEMUA' && 'Semua Pesanan'}
-              {tab === 'PENDING' && 'Menunggu Pembayaran'}
+              {tab === 'PENDING' && 'Belum Dibayar'}
               {tab === 'PAID' && 'Diproses'}
               {tab === 'SHIPPED' && 'Dikirim'}
               {tab === 'COMPLETED' && 'Selesai'}
+              {tab === 'CANCELLED' && 'Dibatalkan'}
             </button>
           ))}
         </div>
@@ -199,14 +221,9 @@ const RiwayatPesanan = () => {
                     if (item.product?.imageUrl) {
                       try {
                         const parsedImage = JSON.parse(item.product.imageUrl);
-                        if (Array.isArray(parsedImage) && parsedImage.length > 0) {
-                          finalImageUrl = `${backendUrl}${parsedImage[0]}`;
-                        } else {
-                          finalImageUrl = `${backendUrl}${item.product.imageUrl}`;
-                        }
-                      } catch (e) {
-                        finalImageUrl = `${backendUrl}${item.product.imageUrl}`;
-                      }
+                        if (Array.isArray(parsedImage) && parsedImage.length > 0) finalImageUrl = `${backendUrl}${parsedImage[0]}`;
+                        else finalImageUrl = `${backendUrl}${item.product.imageUrl}`;
+                      } catch (e) { finalImageUrl = `${backendUrl}${item.product.imageUrl}`; }
                     }
 
                     return (
@@ -230,7 +247,18 @@ const RiwayatPesanan = () => {
                     <span className="text-[18px] font-bold text-[#A86431]">Rp {order.totalAmount?.toLocaleString('id-ID')}</span>
                   </div>
                   
-                  <div className="flex gap-3 w-full md:w-auto">
+                  <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                    
+                    {/* TOMBOL BATAL (Muncul di PENDING dan PAID) */}
+                    {(order.status === 'PENDING' || order.status === 'PAID') && (
+                      <button 
+                        onClick={() => setCancelModal({ isOpen: true, orderId: order.id })}
+                        className="w-full md:w-auto px-5 py-2.5 bg-white border border-red-200 text-red-500 hover:bg-red-50 rounded-lg font-bold text-[14px] transition-colors cursor-pointer"
+                      >
+                        Batalkan Pesanan
+                      </button>
+                    )}
+
                     {order.status === 'PENDING' && order.payment[0]?.paymentUrl && (
                       <button onClick={() => window.location.href = order.payment[0].paymentUrl} className="w-full md:w-auto px-5 py-2.5 bg-[#10B981] hover:bg-[#059669] text-white rounded-lg font-bold text-[14px] transition-colors cursor-pointer border-none shadow-sm">
                         Bayar Sekarang
@@ -242,7 +270,7 @@ const RiwayatPesanan = () => {
                         <button onClick={() => toggleResi(order.id)} className="w-full md:w-auto px-5 py-2.5 bg-white border border-[#EFEFEF] text-[#1A1D20] hover:bg-gray-50 rounded-lg font-semibold text-[14px] transition-colors cursor-pointer shadow-sm">
                           {expandedResi === order.id ? 'Tutup Resi' : 'Cek Resi'}
                         </button>
-                        <button onClick={() => triggerPesananDiterima(order.id)} className="w-full md:w-auto px-5 py-2.5 bg-[#3A2210] hover:bg-[#A86431] text-white rounded-lg font-bold text-[14px] transition-colors cursor-pointer border-none shadow-sm">
+                        <button onClick={() => setConfirmModal({ isOpen: true, orderId: order.id })} className="w-full md:w-auto px-5 py-2.5 bg-[#3A2210] hover:bg-[#A86431] text-white rounded-lg font-bold text-[14px] transition-colors cursor-pointer border-none shadow-sm">
                           Pesanan Diterima
                         </button>
                       </>
@@ -256,7 +284,17 @@ const RiwayatPesanan = () => {
                   </div>
                 </div>
 
-                {/* Dropdown Resi Pengiriman */}
+                {/* AREA JIKA DIBATALKAN (Tampil Alasan) */}
+                {order.status === 'CANCELLED' && (
+                  <div className="bg-[#FEF2F2] p-4 md:px-6 border-t border-[#FCA5A5] flex items-center gap-3">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" className="text-red-500 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div>
+                      <p className="text-[14px] font-bold text-red-600 m-0 mb-0.5">Dibatalkan oleh Pembeli</p>
+                      <p className="text-[13px] text-red-500 m-0">Alasan: {order.cancelReason || 'Tidak ada keterangan'}</p>
+                    </div>
+                  </div>
+                )}
+
                 {expandedResi === order.id && (
                   <div className="bg-[#FFFBEB] p-5 md:px-6 border-t border-[#F59E0B]/20 transition-all duration-300">
                     <p className="text-[13px] font-semibold text-[#A86431] m-0 mb-3 flex items-center gap-2">
@@ -310,45 +348,80 @@ const RiwayatPesanan = () => {
       </main>
 
       {/* ========================================================= */}
-      {/* MODAL CUSTOM KONFIRMASI PESANAN DITERIMA */}
+      {/* MODAL BATALKAN PESANAN */}
       {/* ========================================================= */}
-      {confirmModal.isOpen && (
+      {cancelModal.isOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex flex-col items-center text-center">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex flex-col">
             
-            <div className="w-16 h-16 bg-[#E1F8EF] text-[#10B981] rounded-full flex items-center justify-center mb-4">
-              <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+            <div className="flex justify-between items-center mb-4 border-b border-[#EFEFEF] pb-4">
+              <h3 className="text-[18px] font-bold text-[#1A1D20] m-0">Batalkan Pesanan</h3>
+              <button onClick={() => setCancelModal({ isOpen: false, orderId: null })} className="bg-none border-none text-[24px] text-[#6C757D] hover:text-[#1A1D20] cursor-pointer">&times;</button>
             </div>
+
+            <p className="text-[14px] text-[#6C757D] mb-4">Silakan pilih alasan Anda membatalkan pesanan ini:</p>
             
-            <h3 className="text-[20px] font-bold text-[#1A1D20] m-0 mb-2">Konfirmasi Penerimaan</h3>
-            <p className="text-[14px] text-[#6C757D] m-0 mb-6 leading-relaxed">
-              Apakah Anda yakin biji kopi telah sampai dan diterima dengan baik? Jika dilanjutkan, dana akan diteruskan ke Petani dan status menjadi Selesai.
-            </p>
-            
-            <div className="flex gap-3 w-full">
-              <button 
-                onClick={() => setConfirmModal({ isOpen: false, orderId: null })}
-                className="flex-1 py-3 bg-white border border-[#EFEFEF] rounded-xl font-bold text-[14px] text-[#6C757D] hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={executePesananDiterima}
-                className="flex-1 py-3 bg-[#10B981] border-none rounded-xl font-bold text-[14px] text-white hover:bg-[#059669] transition-colors cursor-pointer shadow-sm"
-              >
-                Ya, Selesaikan
-              </button>
+            <div className="flex flex-col gap-3 mb-6">
+              {[
+                'Ingin mengubah alamat pengiriman',
+                'Ingin menambah/mengurangi pesanan',
+                'Menemukan harga yang lebih murah',
+                'Lainnya'
+              ].map(reason => (
+                <label key={reason} className="flex items-center gap-3 cursor-pointer p-3 border border-[#EFEFEF] rounded-lg hover:bg-[#F8F9FA] transition-colors">
+                  <input 
+                    type="radio" 
+                    name="cancelReason" 
+                    value={reason}
+                    checked={cancelReason === reason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    className="accent-[#A86431] w-4 h-4"
+                  />
+                  <span className="text-[14px] font-medium text-[#1A1D20]">{reason}</span>
+                </label>
+              ))}
+              
+              {cancelReason === 'Lainnya' && (
+                <textarea 
+                  autoFocus
+                  placeholder="Ketik alasan pembatalan Anda di sini..."
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  className="w-full p-3 border border-[#A86431] rounded-lg mt-1 outline-none font-sans text-[14px] resize-y"
+                  rows="3"
+                ></textarea>
+              )}
             </div>
+
+            <button 
+              onClick={executeBatalPesanan}
+              className="w-full py-3 bg-red-500 border-none rounded-xl font-bold text-[14px] text-white hover:bg-red-600 transition-colors cursor-pointer shadow-sm"
+            >
+              Ya, Batalkan Pesanan
+            </button>
             
           </div>
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* TOAST NOTIFICATION */}
-      {/* ========================================================= */}
+      {/* Modal Selesai (Disembunyikan untuk hemat baris, sama dengan sebelumnya) */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-[#E1F8EF] text-[#10B981] rounded-full flex items-center justify-center mb-4">
+              <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h3 className="text-[20px] font-bold text-[#1A1D20] m-0 mb-2">Konfirmasi Penerimaan</h3>
+            <p className="text-[14px] text-[#6C757D] m-0 mb-6 leading-relaxed">Apakah Anda yakin biji kopi telah sampai dan diterima dengan baik? Jika dilanjutkan, dana akan diteruskan ke Petani dan status menjadi Selesai.</p>
+            <div className="flex gap-3 w-full">
+              <button onClick={() => setConfirmModal({ isOpen: false, orderId: null })} className="flex-1 py-3 bg-white border border-[#EFEFEF] rounded-xl font-bold text-[14px] text-[#6C757D] hover:bg-gray-50 transition-colors cursor-pointer">Batal</button>
+              <button onClick={executePesananDiterima} className="flex-1 py-3 bg-[#10B981] border-none rounded-xl font-bold text-[14px] text-white hover:bg-[#059669] transition-colors cursor-pointer shadow-sm">Ya, Selesaikan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
       {toast.isOpen && (
         <div className="fixed bottom-6 right-6 z-[300] animate-fade-in-up">
           <div className={`flex items-center gap-3 px-5 py-4 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-l-4 bg-white ${toast.type === 'success' ? 'border-[#10B981]' : 'border-[#EF4444]'}`}>
@@ -358,9 +431,7 @@ const RiwayatPesanan = () => {
               <svg className="w-6 h-6 text-[#EF4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             )}
             <p className="m-0 text-[14px] font-semibold text-[#1A1D20]">{toast.message}</p>
-            <button onClick={() => setToast({ isOpen: false, message: '', type: 'success' })} className="ml-2 bg-none border-none text-gray-400 hover:text-gray-700 cursor-pointer p-1">
-              &times;
-            </button>
+            <button onClick={() => setToast({ isOpen: false, message: '', type: 'success' })} className="ml-2 bg-none border-none text-gray-400 hover:text-gray-700 cursor-pointer p-1">&times;</button>
           </div>
         </div>
       )}

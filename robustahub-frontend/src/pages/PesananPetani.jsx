@@ -10,11 +10,9 @@ const PesananPetani = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('SEMUA');
   
-  // ==========================================
-  // STATE BARU UNTUK PAGINATION
-  // ==========================================
+  // State untuk Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Batas 5 pesanan per halaman
+  const itemsPerPage = 5;
 
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -46,7 +44,7 @@ const PesananPetani = () => {
     fetchOrders();
   }, []);
 
-  // Jika tab filter berubah, kembalikan ke halaman 1
+  // Kembali ke halaman 1 jika tab filter diubah
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab]);
@@ -83,12 +81,9 @@ const PesananPetani = () => {
     return order.status === activeTab;
   });
 
-  // ==========================================
-  // LOGIKA MATEMATIKA PAGINATION
-  // ==========================================
+  // Logika Matematika Pagination
   const indexOfLastOrder = currentPage * itemsPerPage;
   const indexOfFirstOrder = indexOfLastOrder - itemsPerPage;
-  // Potong array data agar cuma 5 yang tampil
   const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
 
@@ -130,11 +125,12 @@ const PesananPetani = () => {
         <div className="p-5 lg:p-10 max-w-[1000px] mx-auto w-full box-border">
           
           <div className="bg-white p-2 rounded-xl shadow-sm border border-[#EFEFEF] flex overflow-x-auto mb-8 hide-scrollbar">
-            {['SEMUA', 'PENDING', 'PAID', 'SHIPPED', 'COMPLETED'].map((tab) => (
+            {/* DITAMBAHKAN TAB "CANCELLED" */}
+            {['SEMUA', 'PENDING', 'PAID', 'SHIPPED', 'COMPLETED', 'CANCELLED'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`whitespace-nowrap px-6 py-2.5 rounded-lg font-semibold text-[14px] transition-all cursor-pointer ${
+                className={`whitespace-nowrap px-6 py-2.5 rounded-lg font-semibold text-[14px] transition-all cursor-pointer border-none ${
                   activeTab === tab ? 'bg-[#FDF9F5] text-[#A86431]' : 'bg-transparent text-[#6C757D] hover:bg-[#F8F9FA]'
                 }`}
               >
@@ -143,6 +139,7 @@ const PesananPetani = () => {
                 {tab === 'PAID' && 'Perlu Diproses'}
                 {tab === 'SHIPPED' && 'Sedang Dikirim'}
                 {tab === 'COMPLETED' && 'Selesai'}
+                {tab === 'CANCELLED' && 'Dibatalkan'}
               </button>
             ))}
           </div>
@@ -152,15 +149,15 @@ const PesananPetani = () => {
               <div className="text-center py-10 text-[#A86431] font-semibold">Memuat daftar pesanan...</div>
             ) : filteredOrders.length === 0 ? (
               <div className="bg-white p-12 rounded-2xl shadow-sm border border-[#EFEFEF] text-center">
-                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                 <h3 className="text-lg font-bold text-[#1A1D20] mb-2">Belum Ada Pesanan</h3>
                 <p className="text-[#6C757D]">Tidak ada pesanan yang sesuai dengan filter saat ini.</p>
               </div>
             ) : (
               <>
-                {/* LOOPING HANYA UNTUK currentOrders (Maksimal 5) */}
                 {currentOrders.map((order) => (
                   <div key={order.id} className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-[#EFEFEF] overflow-hidden">
+                    
                     {/* Order Header */}
                     <div className="px-6 py-4 border-b border-[#EFEFEF] flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-[#FAFAFA]">
                       <div>
@@ -194,6 +191,20 @@ const PesananPetani = () => {
                       ))}
                     </div>
 
+                    {/* ======================================================== */}
+                    {/* AREA ALASAN BATAL (HANYA MUNCUL JIKA STATUS CANCELLED)   */}
+                    {/* ======================================================== */}
+                    {order.status === 'CANCELLED' && (
+                      <div className="bg-[#FEF2F2] p-4 md:px-6 border-y border-[#FCA5A5] flex flex-col gap-1">
+                        <strong className="text-[14px] text-red-600 flex items-center gap-2">
+                          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          Dibatalkan oleh Pembeli
+                        </strong>
+                        <span className="text-[13px] text-red-500">Alasan: {order.cancelReason || 'Tidak ada keterangan'}</span>
+                        <span className="text-[12px] text-gray-500 mt-1 italic">*Sistem telah mengembalikan stok produk ini ke Inventaris Kopi Anda.</span>
+                      </div>
+                    )}
+
                     {/* Order Footer */}
                     <div className="px-6 py-5 border-t border-[#EFEFEF] flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white">
                       <div>
@@ -203,7 +214,7 @@ const PesananPetani = () => {
                       
                       <div className="flex gap-3 w-full sm:w-auto">
                         {order.status === 'PAID' && (
-                          <button onClick={() => handleKirimPesanan(order.id)} className="w-full sm:w-auto px-6 py-2.5 bg-[#3A2210] hover:bg-[#A86431] text-white rounded-lg font-semibold text-[14px] transition-colors shadow-sm">
+                          <button onClick={() => handleKirimPesanan(order.id)} className="w-full sm:w-auto px-6 py-2.5 bg-[#3A2210] hover:bg-[#A86431] text-white rounded-lg font-semibold text-[14px] transition-colors border-none shadow-sm cursor-pointer">
                             Kirim Pesanan
                           </button>
                         )}
@@ -217,14 +228,17 @@ const PesananPetani = () => {
                             Menunggu Pembayaran
                           </button>
                         )}
+                        {order.status === 'CANCELLED' && (
+                          <button disabled className="w-full sm:w-auto px-6 py-2.5 bg-white text-red-400 border border-red-200 rounded-lg font-semibold text-[14px] cursor-not-allowed">
+                            Pesanan Dibatalkan
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
 
-                {/* ========================================== */}
-                {/* KOMPONEN TOMBOL PAGINATION                 */}
-                {/* ========================================== */}
+                {/* Komponen Tombol Pagination */}
                 {totalPages > 1 && (
                   <div className="flex flex-col sm:flex-row justify-between items-center mt-4 bg-white p-4 rounded-xl border border-[#EFEFEF] shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                     <span className="text-[13px] text-[#6C757D] mb-4 sm:mb-0 font-medium">
@@ -232,35 +246,17 @@ const PesananPetani = () => {
                     </span>
                     
                     <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors"
-                      >
+                      <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors bg-white cursor-pointer">
                         &laquo; Prev
                       </button>
-                      
                       <div className="flex gap-1">
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                          <button
-                            key={page}
-                            onClick={() => setCurrentPage(page)}
-                            className={`w-8 h-8 rounded-lg text-[13px] font-bold flex items-center justify-center transition-colors ${
-                              currentPage === page 
-                                ? 'bg-[#3A2210] text-white' 
-                                : 'text-[#6C757D] hover:bg-[#F8F9FA]'
-                            }`}
-                          >
+                          <button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 rounded-lg border-none text-[13px] font-bold flex items-center justify-center transition-colors cursor-pointer ${currentPage === page ? 'bg-[#3A2210] text-white' : 'bg-transparent text-[#6C757D] hover:bg-[#F8F9FA]'}`}>
                             {page}
                           </button>
                         ))}
                       </div>
-
-                      <button 
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors"
-                      >
+                      <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors bg-white cursor-pointer">
                         Next &raquo;
                       </button>
                     </div>

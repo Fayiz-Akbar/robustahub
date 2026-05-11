@@ -106,8 +106,9 @@ const getMyOrders = async (req, res) => {
     const orders = await prisma.order.findMany({
       where: { buyerId: buyerId },
       include: {
-        items: { include: { product: { select: { name: true } } } },
-        payment: true, // Tampilkan data pembayaran juga
+        // 👇 UBAH BARIS INI: dari { select: { name: true } } menjadi true saja
+        items: { include: { product: true } }, 
+        payment: true, 
         shipment: true
       },
       orderBy: { createdAt: 'desc' }
