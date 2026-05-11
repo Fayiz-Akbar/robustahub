@@ -267,4 +267,47 @@ const completeOrderForBuyer = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber,getIncomingOrders, updateOrderStatus, completeOrderForBuyer };
+// Fungsi untuk membatalkan pesanan oleh pembeli
+const cancelOrderBuyer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { cancelReason } = req.body;
+
+    // 1. Cari pesanan
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { items: true } // Ambil produknya untuk kembalikan stok
+    });
+
+    if (!order) return res.status(404).json({ message: "Pesanan tidak ditemukan" });
+
+    // 2. Pastikan hanya PENDING dan PAID yang bisa dibatalkan
+    if (order.status !== 'PENDING' && order.status !== 'PAID') {
+      return res.status(400).json({ message: "Pesanan sudah diproses, tidak bisa dibatalkan." });
+    }
+
+    // 3. KEMBALIKAN STOK KOPI KE PETANI (Sangat Penting!)
+    for (let item of order.items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: { stock: { increment: item.quantity } } // Tambahkan kembali stoknya
+      });
+    }
+
+    // 4. Ubah status jadi CANCELLED dan simpan alasannya
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: { 
+        status: 'CANCELLED',
+        cancelReason: cancelReason || 'Dibatalkan oleh pembeli'
+      }
+    });
+
+    res.status(200).json({ message: "Pesanan berhasil dibatalkan", data: updatedOrder });
+  } catch (error) {
+    console.error("Error cancel order:", error);
+    res.status(500).json({ message: "Terjadi kesalahan server saat membatalkan pesanan." });
+  }
+};
+
+module.exports = { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber,getIncomingOrders, updateOrderStatus, completeOrderForBuyer, cancelOrderBuyer };

@@ -93,6 +93,8 @@ model Order {
   buyerId     String
   buyer       Pengguna        @relation(fields: [buyerId], references: [id])
   
+  cancelReason  String?
+  
   // Relasi ke tabel lain
   items       OrderItem[]
   payment     Payment?    // 1 Order punya 1 Pembayaran

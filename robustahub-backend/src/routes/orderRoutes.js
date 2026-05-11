@@ -35,4 +35,7 @@ router.patch('/:id/status', verifyToken, isPetani, updateOrderStatus);
 // Rute untuk menyelesaikan pesanan (SHIPPED -> COMPLETED) oleh Pembeli
 router.put('/:id/complete', verifyToken, completeOrderForBuyer);
 
+// Rute untuk membatalkan pesanan (Pembeli)
+router.patch('/:id/cancel', verifyToken, cancelOrderBuyer);
+
 module.exports = router;
