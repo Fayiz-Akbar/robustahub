@@ -1,23 +1,57 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(''); 
   const [isProfileOpen, setIsProfileOpen] = useState(false); 
+  
+  // ==========================================
+  // STATE BARU UNTUK JUMLAH NOTIFIKASI
+  // ==========================================
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const navigate = useNavigate();
 
   // Mengambil data user
+  const token = localStorage.getItem('token');
   const userDataString = localStorage.getItem('user');
   const user = userDataString ? JSON.parse(userDataString) : null;
 
   const isLoggedIn = user !== null;
-  // Menangkap role user untuk membedakan menu Petani dan Pembeli
   const userRole = user ? user.role : null; 
 
   const displayName = user ? user.name : '';
   const displayEmail = user ? user.email : '';
   const displayInitials = user ? user.name.substring(0, 2).toUpperCase() : '';
+
+  // ==========================================
+  // FUNGSI MENGAMBIL JUMLAH NOTIFIKASI UNREAD
+  // ==========================================
+  useEffect(() => {
+    if (isLoggedIn && token) {
+      const fetchUnreadNotifs = async () => {
+        try {
+          const response = await fetch('http://localhost:5000/api/notifications', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const result = await response.json();
+            // Hitung hanya yang isRead-nya false
+            const unread = result.data.filter(notif => !notif.isRead).length;
+            setUnreadCount(unread);
+          }
+        } catch (error) {
+          console.error("Gagal mengambil jumlah notifikasi:", error);
+        }
+      };
+
+      fetchUnreadNotifs();
+      // Opsional: Polling tiap 30 detik agar selalu update (bisa diaktifkan jika perlu)
+      // const interval = setInterval(fetchUnreadNotifs, 30000);
+      // return () => clearInterval(interval);
+    }
+  }, [isLoggedIn, token]);
 
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
@@ -41,7 +75,7 @@ const Navbar = () => {
           RobustaHub
         </Link>
 
-        {/* Search Bar (Desktop) - Selalu Muncul */}
+        {/* Search Bar (Desktop) */}
         <div className="hidden lg:block flex-1 max-w-[500px] mx-10 relative">
           <svg className="absolute left-[18px] top-1/2 -translate-y-1/2 text-[#6C757D] w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           <input 
@@ -58,21 +92,23 @@ const Navbar = () => {
         <div className="hidden lg:flex items-center gap-5">
           {isLoggedIn ? (
             <>
-              {/* Keranjang & Notifikasi hanya untuk PEMBELI (COFFEE_SHOP) */}
+              {/* Keranjang HANYA untuk PEMBELI */}
               {userRole === 'COFFEE_SHOP' && (
-                <>
-                  {/* ICON KERANJANG SUDAH DIPERBAIKI (Tukar SVG) */}
-                  <Link to="/keranjang" className="text-[#1A1D20] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                  </Link>
-                  
-                  {/* ICON NOTIFIKASI/LONCENG SUDAH DIPERBAIKI (Tukar SVG) */}
-                  <Link to="/notifikasi" className="relative text-[#1A1D20] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">
-                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    <span className="absolute top-0 right-0 bg-[#A86431] text-white text-[10px] font-bold w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white">2</span>
-                  </Link>
-                </>
+                <Link to="/keranjang" className="text-[#1A1D20] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </Link>
               )}
+              
+              {/* NOTIFIKASI UNTUK SEMUA (Pembeli & Petani) */}
+              <Link to="/notifikasi" className="relative text-[#1A1D20] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                {/* Lencana Angka Dinamis */}
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 bg-[#A86431] text-white text-[10px] font-bold min-w-[18px] px-1 h-[18px] flex items-center justify-center rounded-full border-2 border-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
               
               <div className="relative">
                 <button 
@@ -92,7 +128,6 @@ const Navbar = () => {
                       <p className="text-[14px] font-bold text-[#1A1D20] truncate" title={displayEmail}>{displayEmail}</p>
                     </div>
 
-                    {/* LOGIKA PERCABANGAN MENU DROPDOWN BERDASARKAN ROLE */}
                     {userRole === 'PETANI' ? (
                       <Link to="/dashboard" onClick={() => setIsProfileOpen(false)} className="block px-4 py-2 text-[14px] text-[#1A1D20] hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">Dashboard Saya</Link>
                     ) : (
@@ -108,7 +143,6 @@ const Navbar = () => {
               </div>
             </>
           ) : (
-            // ================= JIKA BELUM LOGIN =================
             <>
               <Link to="/" className="text-[#3A2210] font-semibold text-[15px] hover:text-[#A86431] transition-colors px-2">Masuk</Link>
               <Link to="/register" className="bg-[#A86431] text-white px-6 py-2.5 rounded-full font-semibold text-[14px] hover:bg-[#3A2210] transition-colors shadow-sm">Daftar Sekarang</Link>
@@ -145,7 +179,6 @@ const Navbar = () => {
         <div className="flex flex-col gap-4 text-[18px] font-semibold text-[#1A1D20] flex-1">
           {isLoggedIn ? (
             <>
-              {/* LOGIKA PERCABANGAN MENU MOBILE BERDASARKAN ROLE */}
               {userRole === 'COFFEE_SHOP' && (
                 <>
                   <Link to="/keranjang" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg bg-[#F8F9FA]"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg> Keranjang Belanja</Link>
@@ -157,6 +190,17 @@ const Navbar = () => {
                 <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> Dashboard Saya</Link>
               )}
               
+              {/* Notifikasi Mobile untuk SEMUA ROLE */}
+              <Link to="/notifikasi" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between p-3">
+                <span className="flex items-center gap-3">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg> 
+                  Notifikasi
+                </span>
+                {unreadCount > 0 && (
+                  <span className="bg-[#A86431] text-white text-[12px] font-bold px-2.5 py-0.5 rounded-full">{unreadCount > 99 ? '99+' : unreadCount} Baru</span>
+                )}
+              </Link>
+
               <Link to="/profil" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> Profil Pengguna</Link>
             </>
           ) : (

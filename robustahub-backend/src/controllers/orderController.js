@@ -220,7 +220,7 @@ const getIncomingOrders = async (req, res) => {
         items: { include: { product: true } },
         payment: true,
         shipment: true,
-        buyer: { select: { name: true } } // Mengambil nama pembeli
+        buyer: { select: { name: true, phone: true, address: true } }
       },
       orderBy: { createdAt: 'desc' }
     });

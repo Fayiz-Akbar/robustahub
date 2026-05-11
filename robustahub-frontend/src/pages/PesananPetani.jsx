@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import SidebarPetani from '../components/SidebarPetani';
 
 const PesananPetani = () => {
@@ -48,32 +48,6 @@ const PesananPetani = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab]);
-
-  const handleKirimPesanan = async (orderId) => {
-    const inputResi = window.prompt("Masukkan Nomor Resi Pengiriman Kargo/Kurir (contoh: DAKOTA-12345):");
-    if (!inputResi) return;
-
-    try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/ship`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ waybillNumber: inputResi }) 
-      });
-
-      if (response.ok) {
-        alert('Pesanan berhasil dikirim dan nomor resi telah disimpan!');
-        fetchOrders(); 
-      } else {
-        const result = await response.json();
-        alert(`Gagal mengirim pesanan: ${result.message}`);
-      }
-    } catch (error) {
-      alert('Terjadi kesalahan pada server.');
-    }
-  };
 
   // Filter pesanan berdasarkan Tab
   const filteredOrders = orders.filter(order => {
@@ -213,19 +187,25 @@ const PesananPetani = () => {
                       </div>
                       
                       <div className="flex gap-3 w-full sm:w-auto">
+                        {/* Tombol Detail Pesanan SELALU MUNCUL */}
+                        <Link to={`/detail-pesanan/${order.id}`} state={{ order }} className="w-full sm:w-auto px-6 py-2.5 bg-white text-[#3A2210] border border-[#EFEFEF] hover:bg-gray-50 rounded-lg font-semibold text-[14px] transition-colors shadow-sm text-center no-underline">
+                          Detail Pesanan
+                        </Link>
+
+                        {/* Tombol Aksi Berdasarkan Status */}
                         {order.status === 'PAID' && (
-                          <button onClick={() => handleKirimPesanan(order.id)} className="w-full sm:w-auto px-6 py-2.5 bg-[#3A2210] hover:bg-[#A86431] text-white rounded-lg font-semibold text-[14px] transition-colors border-none shadow-sm cursor-pointer">
-                            Kirim Pesanan
-                          </button>
+                          <Link to={`/detail-pesanan/${order.id}`} state={{ order }} className="w-full sm:w-auto px-6 py-2.5 bg-[#3A2210] hover:bg-[#A86431] text-white rounded-lg font-semibold text-[14px] transition-colors border-none shadow-sm cursor-pointer text-center no-underline">
+                            Input Resi
+                          </Link>
                         )}
                         {order.status === 'SHIPPED' && (
                           <button disabled className="w-full sm:w-auto px-6 py-2.5 bg-[#F8F9FA] text-[#6C757D] border border-[#EFEFEF] rounded-lg font-semibold text-[14px] cursor-not-allowed">
-                            Menunggu Konfirmasi Pembeli
+                            Menunggu Konfirmasi
                           </button>
                         )}
                         {order.status === 'PENDING' && (
                           <button disabled className="w-full sm:w-auto px-6 py-2.5 bg-[#F8F9FA] text-[#6C757D] border border-[#EFEFEF] rounded-lg font-semibold text-[14px] cursor-not-allowed">
-                            Menunggu Pembayaran
+                            Belum Dibayar
                           </button>
                         )}
                         {order.status === 'CANCELLED' && (
