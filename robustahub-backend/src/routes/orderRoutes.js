@@ -7,8 +7,9 @@ const {
   getMyOrders, 
   xenditWebhook, 
   updateTrackingNumber,
-  getIncomingOrders, // <-- Tambahan
-  updateOrderStatus  // <-- Tambahan
+  getIncomingOrders, 
+  updateOrderStatus,  
+  completeOrderForBuyer
 } = require('../controllers/orderController'); 
 
 const { verifyToken, isCoffeeShop, isPetani } = require('../middlewares/authMiddleware');
@@ -31,5 +32,7 @@ router.get('/incoming', verifyToken, isPetani, getIncomingOrders);
 
 // Rute untuk update status pesanan secara instan (PAID -> SHIPPED)
 router.patch('/:id/status', verifyToken, isPetani, updateOrderStatus);
+// Rute untuk menyelesaikan pesanan (SHIPPED -> COMPLETED) oleh Pembeli
+router.put('/:id/complete', verifyToken, completeOrderForBuyer);
 
 module.exports = router;

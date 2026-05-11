@@ -252,4 +252,19 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber,getIncomingOrders, updateOrderStatus };
+const completeOrderForBuyer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedOrder = await prisma.order.update({
+      where: { id: id },
+      data: { status: 'COMPLETED' }
+    });
+    res.status(200).json({ message: 'Pesanan telah selesai', data: updatedOrder });
+  } catch (error) {
+    // Tambahkan baris ini agar error tercatat di terminal
+    console.error("Error dari Backend saat Pesanan Diterima:", error); 
+    res.status(500).json({ message: 'Terjadi kesalahan pada database.' });
+  }
+};
+
+module.exports = { createOrder, getMyOrders, xenditWebhook, updateTrackingNumber,getIncomingOrders, updateOrderStatus, completeOrderForBuyer };

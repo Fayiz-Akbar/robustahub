@@ -12,6 +12,7 @@ import DetailProduk from './pages/DetailProduk';
 import KeranjangBelanja from './pages/KeranjangBelanja';
 import CheckoutPembayaran from './pages/CheckoutPembayaran';
 import ProfilPembeli from './pages/ProfilPembeli';
+import RiwayatPesanan from './pages/RiwayatPesanan';
 
 // Membuat halaman dummy sementara untuk melihat hasil komponen
 const BerandaSementara = () => {
@@ -49,6 +50,7 @@ function App() {
           {/* Rute lain (Nanti kita tambahkan Navbar di dalamnya) */}
           <Route path="/katalog" element={<KatalogKopi />} />
           <Route path="/profil" element={<ProfilPembeli />} />
+          <Route path="/riwayat" element={<RiwayatPesanan />} />
         </Routes>
       </div>
     </Router>

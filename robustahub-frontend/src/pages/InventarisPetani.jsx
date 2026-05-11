@@ -14,6 +14,12 @@ const InventarisPetani = () => {
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState(''); // State untuk search bar
   
+  // ==========================================
+  // STATE BARU UNTUK PAGINATION
+  // ==========================================
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Batas 5 produk per halaman
+
   const [formData, setFormData] = useState({ 
     name: '', price: '', stock: '', 
     description: '', processingMethod: '', elevation: '', tastingNotes: '',
@@ -33,7 +39,7 @@ const InventarisPetani = () => {
       
       if (response.ok) {
         const myProducts = result.data.filter(p => p.petaniId === user.id || p.petani?.id === user.id);
-        // Urutkan dari yang terbaru (opsional)
+        // Urutkan dari yang terbaru
         setProducts(myProducts.reverse());
       }
     } catch (error) {
@@ -49,6 +55,11 @@ const InventarisPetani = () => {
     }
     fetchMyProducts();
   }, []);
+
+  // Jika kata kunci pencarian berubah, kembalikan ke halaman 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Fungsi Helper untuk Parsing Gambar JSON
   const getImageUrl = (imageUrl) => {
@@ -117,7 +128,6 @@ const InventarisPetani = () => {
     }
 
     try {
-      // Jika mode 'add', lakukan POST. Jika mode 'edit', lakukan PUT/PATCH
       const url = modalMode === 'add' 
         ? 'http://localhost:5000/api/products' 
         : `http://localhost:5000/api/products/${editId}`;
@@ -133,6 +143,7 @@ const InventarisPetani = () => {
         alert(modalMode === 'add' ? 'Kopi berhasil ditambahkan!' : 'Kopi berhasil diperbarui!');
         setIsModalOpen(false);
         fetchMyProducts(); 
+        if (modalMode === 'add') setCurrentPage(1);
       } else {
         const result = await response.json();
         alert(`Gagal: ${result.message}`);
@@ -164,10 +175,17 @@ const InventarisPetani = () => {
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // ==========================================
+  // LOGIKA MATEMATIKA PAGINATION
+  // ==========================================
+  const indexOfLastProduct = currentPage * itemsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
   return (
     <div className="flex h-screen bg-[#F8F9FA] overflow-hidden font-sans text-[#1A1D20]">
       
-      {/* Panggil komponen Sidebar, set activePage ke "inventaris" */}
       <SidebarPetani 
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen} 
@@ -176,7 +194,6 @@ const InventarisPetani = () => {
 
       <main className="flex-1 flex flex-col relative overflow-y-auto w-full">
         
-        {/* Header Desktop & Mobile */}
         <header className="bg-white h-[80px] px-5 lg:px-10 flex justify-between items-center border-b border-[#EFEFEF] sticky top-0 z-50">
           <div className="text-[18px] lg:text-[22px] font-bold text-[#1A1D20]">
             Kelola Inventaris
@@ -200,10 +217,8 @@ const InventarisPetani = () => {
           
           <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-black/5 overflow-hidden">
             
-            {/* Toolbar Atas Tabel: Search & Tombol Tambah */}
             <div className="p-6 md:px-8 border-b border-[#EFEFEF] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               
-              {/* Search Bar Khusus Inventaris */}
               <div className="relative w-full md:w-[350px]">
                 <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6C757D] w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 <input 
@@ -239,7 +254,7 @@ const InventarisPetani = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredProducts.map((item) => (
+                    currentProducts.map((item) => (
                       <tr key={item.id} className="hover:bg-[#FDF9F5] transition-colors group">
                         <td className="py-4 px-8 border-b border-[#EFEFEF] whitespace-nowrap">
                           <div className="flex items-center gap-4">
@@ -272,7 +287,6 @@ const InventarisPetani = () => {
                         </td>
                         <td className="py-4 px-8 border-b border-[#EFEFEF] whitespace-nowrap">
                           <div className="flex gap-2">
-                            {/* Tombol Edit Baru */}
                             <button onClick={() => handleOpenEdit(item)} className="py-1.5 px-3 rounded-md border border-[#EFEFEF] font-semibold cursor-pointer transition-colors text-[#3B82F6] bg-white hover:bg-blue-50 hover:border-blue-200">
                               Edit
                             </button>
@@ -287,6 +301,52 @@ const InventarisPetani = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* ========================================== */}
+            {/* KOMPONEN TOMBOL PAGINATION UNTUK TABEL     */}
+            {/* ========================================== */}
+            {totalPages > 1 && (
+              <div className="p-6 border-t border-[#EFEFEF] bg-[#FAFAFA] flex flex-col sm:flex-row justify-between items-center">
+                <span className="text-[13px] text-[#6C757D] font-medium mb-4 sm:mb-0">
+                  Menampilkan {indexOfFirstProduct + 1} - {Math.min(indexOfLastProduct, filteredProducts.length)} dari {filteredProducts.length} kopi
+                </span>
+                
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] bg-white text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors cursor-pointer"
+                  >
+                    &laquo; Prev
+                  </button>
+                  
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 rounded-lg text-[13px] font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                          currentPage === page 
+                            ? 'bg-[#3A2210] text-white' 
+                            : 'bg-white text-[#6C757D] hover:bg-[#F8F9FA] border border-[#EFEFEF]'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-lg border border-[#EFEFEF] bg-white text-[13px] font-semibold text-[#1A1D20] disabled:opacity-40 hover:bg-[#F8F9FA] transition-colors cursor-pointer"
+                  >
+                    Next &raquo;
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       </main>
