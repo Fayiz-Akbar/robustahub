@@ -48,23 +48,26 @@ const getAllProducts = async (req, res) => {
   try {
     const products = await prisma.product.findMany({
       include: {
-        petani: {
-          select: { 
-            name: true, 
-            address: true,
-            shopName: true 
-          } 
+        petani: { select: { name: true } },
+        // Hitung dari pesanan yang minimal sudah DIBAYAR atau SELESAI
+        orderItems: {
+          where: { 
+            order: { status: { in: ['PAID', 'SHIPPED', 'COMPLETED'] } } 
+          }
         }
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
-    res.status(200).json({
-      message: 'Berhasil mengambil data katalog kopi!',
-      data: products
+    // Kalkulasi total terjual untuk setiap produk
+    const productsWithSold = products.map(product => {
+      const sold = product.orderItems.reduce((total, item) => total + item.quantity, 0);
+      return { ...product, sold };
     });
+
+    res.status(200).json({ data: productsWithSold });
   } catch (error) {
-    console.error("Error saat mengambil data produk:", error);
-    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    res.status(500).json({ message: 'Gagal mengambil data produk' });
   }
 };
 
