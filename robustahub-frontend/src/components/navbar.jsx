@@ -84,7 +84,7 @@ const Navbar = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearch} 
             className="w-full py-3 pr-5 pl-12 border border-[#EFEFEF] rounded-full bg-[#F8F9FA] outline-none text-[14px] transition-all focus:border-[#A86431] focus:bg-white focus:shadow-[0_4px_15px_rgba(168,100,49,0.1)]" 
-            placeholder="Cari kopi robusta lampung... (Tekan Enter)" 
+            placeholder="Cari kopi robusta lampung..." 
           />
         </div>
 
