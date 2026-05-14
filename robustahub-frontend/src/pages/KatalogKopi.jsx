@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom'; // IMPORT BARU
+import { useSearchParams, Link } from 'react-router-dom'; // TAMBAHKAN Link DISINI
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
@@ -31,12 +31,15 @@ const KatalogKopi = () => {
     fetchProducts();
   }, []);
 
-  // Filter logika: Cari kopi yang namanya mirip dengan searchQuery (mengabaikan huruf besar/kecil)
+  // Filter logika: Cari kopi yang namanya mirip dengan searchQuery
   const filteredProducts = products.filter(product => 
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const topProducts = products.slice(0, 4);
+  
+  // Batasi kopi yang tampil di beranda maksimal 8 item saja
+  const displayProducts = products.slice(0, 8); 
 
   // Jika sedang mencari sesuatu, sembunyikan Hero Banner
   const isSearching = searchQuery.length > 0;
@@ -66,11 +69,18 @@ const KatalogKopi = () => {
             {/* Tampilan Jika SEDANG MENCARI */}
             {isSearching ? (
               <section>
-                <div className="mb-8">
-                  <h2 className="text-[28px] font-bold text-[#3A2210] m-0">
-                    Hasil Pencarian untuk: "{searchQuery}"
-                  </h2>
-                  <p className="text-gray-500 mt-2">Ditemukan {filteredProducts.length} produk</p>
+                <div className="mb-8 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-[28px] font-bold text-[#3A2210] m-0">
+                      Hasil Pencarian untuk: "{searchQuery}"
+                    </h2>
+                    <p className="text-gray-500 mt-2">Ditemukan {filteredProducts.length} produk</p>
+                  </div>
+                  
+                  {/* Tombol Lihat Semua di halaman pencarian */}
+                  <Link to={`/semua-kopi?search=${searchQuery}`} className="hidden sm:inline-flex items-center gap-2 text-[#A86431] font-semibold hover:text-[#3A2210] transition-colors no-underline">
+                    Lihat Lebih Banyak <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                  </Link>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[30px]">
@@ -79,7 +89,7 @@ const KatalogKopi = () => {
                       Waduh, kopi "{searchQuery}" tidak ditemukan di kebun mana pun.
                     </div>
                   ) : (
-                    filteredProducts.map((item) => <ProductCard key={item.id} product={item} />)
+                    filteredProducts.slice(0,8).map((item) => <ProductCard key={item.id} product={item} />)
                   )}
                 </div>
               </section>
@@ -98,16 +108,36 @@ const KatalogKopi = () => {
                 )}
 
                 <section>
+                  {/* UBAH BAGIAN HEADER INI AGAR ADA TOMBOL "LIHAT SEMUA" */}
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-8 gap-3">
-                    <h2 className="text-[28px] font-bold text-[#3A2210] m-0">Jelajahi Semua Produk</h2>
+                    <div>
+                      <h2 className="text-[28px] font-bold text-[#3A2210] m-0 mb-2">Kopi Pilihan RobustaHub</h2>
+                      <p className="text-[15px] text-[#6C757D] m-0">Koleksi biji kopi segar langsung dari tangan petani.</p>
+                    </div>
+                    
+                    <Link to="/semua-kopi" className="inline-flex items-center gap-2 text-[#A86431] font-semibold hover:text-[#3A2210] transition-colors no-underline">
+                      Lihat Semua Kopi <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </Link>
                   </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[30px]">
-                    {products.length === 0 ? (
+                    {displayProducts.length === 0 ? (
                       <div className="col-span-full text-center py-10 text-gray-500">Belum ada katalog.</div>
                     ) : (
-                      products.map((item) => <ProductCard key={item.id} product={item} />)
+                      // HANYA MAP "displayProducts" (maksimal 8 kopi)
+                      displayProducts.map((item) => <ProductCard key={item.id} product={item} />)
                     )}
                   </div>
+                  
+                  {/* Tombol Lihat Semua versi Mobile (Muncul di bawah jika di HP) */}
+                  {products.length > 8 && (
+                    <div className="mt-8 text-center sm:hidden">
+                      <Link to="/semua-kopi" className="inline-block w-full py-3 bg-[#FDF9F5] text-[#A86431] font-semibold border border-[#A86431] rounded-lg no-underline">
+                        Jelajahi Semua Katalog
+                      </Link>
+                    </div>
+                  )}
+
                 </section>
               </>
             )}
