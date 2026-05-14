@@ -60,6 +60,7 @@ function App() {
           <Route path="/notifikasi" element={<Notifikasi />} />
           <Route path="/detail-pesanan/:id" element={<DetailPesananPetani />} />
           <Route path="/lacak-pesanan" element={<LacakPesanan />} />
+          <Route path="/semua-kopi" element={<SemuaKopi />} />
         </Routes>
       </div>
     </Router>
