@@ -15,6 +15,10 @@ import ProfilPembeli from './pages/ProfilPembeli';
 import RiwayatPesanan from './pages/RiwayatPesanan';
 import Notifikasi from './pages/Notifikasi';
 import DetailPesananPetani from './pages/DetailPesananPetani';
+import LacakPesanan from './pages/LacakPesanan';
+import SemuaKopi from './pages/SemuaKopi';
+
+
 
 // Membuat halaman dummy sementara untuk melihat hasil komponen
 const BerandaSementara = () => {
@@ -55,6 +59,7 @@ function App() {
           <Route path="/riwayat" element={<RiwayatPesanan />} />
           <Route path="/notifikasi" element={<Notifikasi />} />
           <Route path="/detail-pesanan/:id" element={<DetailPesananPetani />} />
+          <Route path="/lacak-pesanan" element={<LacakPesanan />} />
         </Routes>
       </div>
     </Router>

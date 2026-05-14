@@ -10,7 +10,6 @@ const RiwayatPesanan = () => {
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-  const [expandedResi, setExpandedResi] = useState(null);
 
   // State Modal Pembatalan & Selesai
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, orderId: null });
@@ -47,7 +46,6 @@ const RiwayatPesanan = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-    setExpandedResi(null); 
   }, [activeTab]);
 
   const showToast = (message, type = 'success') => {
@@ -78,7 +76,7 @@ const RiwayatPesanan = () => {
   };
 
   // ==========================================
-  // FUNGSI EKSEKUSI BATAL PESANAN (DIPERBAIKI)
+  // FUNGSI EKSEKUSI BATAL PESANAN
   // ==========================================
   const executeBatalPesanan = async () => {
     const orderId = cancelModal.orderId;
@@ -92,7 +90,6 @@ const RiwayatPesanan = () => {
     setCancelModal({ isOpen: false, orderId: null }); 
     
     try {
-      // UBAH method menjadi PUT
       const response = await fetch(`http://localhost:5000/api/orders/${orderId}/cancel`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -105,7 +102,6 @@ const RiwayatPesanan = () => {
         setCustomReason('');
         fetchOrders(); 
       } else {
-        // PENANGKAP ERROR YANG LEBIH AMAN
         const errorText = await response.text();
         try {
           const errorData = JSON.parse(errorText);
@@ -118,11 +114,6 @@ const RiwayatPesanan = () => {
       console.error(error);
       showToast('Terjadi kesalahan koneksi jaringan.', 'error');
     }
-  };
-
-  const toggleResi = (orderId) => {
-    if (expandedResi === orderId) setExpandedResi(null);
-    else setExpandedResi(orderId);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -247,7 +238,7 @@ const RiwayatPesanan = () => {
                     <span className="text-[18px] font-bold text-[#A86431]">Rp {order.totalAmount?.toLocaleString('id-ID')}</span>
                   </div>
                   
-                  <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                  <div className="flex gap-3 w-full md:w-auto">
                     
                     {/* TOMBOL BATAL (Muncul di PENDING dan PAID) */}
                     {(order.status === 'PENDING' || order.status === 'PAID') && (
@@ -267,9 +258,13 @@ const RiwayatPesanan = () => {
 
                     {order.status === 'SHIPPED' && (
                       <>
-                        <button onClick={() => toggleResi(order.id)} className="w-full md:w-auto px-5 py-2.5 bg-white border border-[#EFEFEF] text-[#1A1D20] hover:bg-gray-50 rounded-lg font-semibold text-[14px] transition-colors cursor-pointer shadow-sm">
-                          {expandedResi === order.id ? 'Tutup Resi' : 'Cek Resi'}
-                        </button>
+                        <Link 
+                          to="/lacak-pesanan" 
+                          state={{ order }} 
+                          className="w-full md:w-auto px-5 py-2.5 bg-white border border-[#EFEFEF] text-[#1A1D20] hover:bg-gray-50 rounded-lg font-semibold text-[14px] transition-colors cursor-pointer shadow-sm no-underline text-center"
+                        >
+                          Cek Resi
+                        </Link>
                         <button onClick={() => setConfirmModal({ isOpen: true, orderId: order.id })} className="w-full md:w-auto px-5 py-2.5 bg-[#3A2210] hover:bg-[#A86431] text-white rounded-lg font-bold text-[14px] transition-colors cursor-pointer border-none shadow-sm">
                           Pesanan Diterima
                         </button>
@@ -294,29 +289,6 @@ const RiwayatPesanan = () => {
                     </div>
                   </div>
                 )}
-
-                {expandedResi === order.id && (
-                  <div className="bg-[#FFFBEB] p-5 md:px-6 border-t border-[#F59E0B]/20 transition-all duration-300">
-                    <p className="text-[13px] font-semibold text-[#A86431] m-0 mb-3 flex items-center gap-2">
-                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>
-                      Informasi Pengiriman
-                    </p>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 bg-white p-4 rounded-xl border border-[#EFEFEF]">
-                      <div>
-                        <span className="text-[12px] text-[#6C757D] block mb-1">Kurir / Kargo</span>
-                        <span className="text-[15px] font-bold text-[#1A1D20]">{order.shipment?.courierName || 'Kargo Internal'}</span>
-                      </div>
-                      <div className="hidden sm:block w-[1px] h-8 bg-[#EFEFEF]"></div>
-                      <div>
-                        <span className="text-[12px] text-[#6C757D] block mb-1">Nomor Resi</span>
-                        <span className="text-[15px] font-bold text-[#1A1D20] tracking-wider bg-[#F8F9FA] px-2 py-1 rounded border border-[#EFEFEF]">
-                          {order.shipment?.waybillNumber || 'Menunggu Update'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
               </div>
             ))
           )}
@@ -404,7 +376,7 @@ const RiwayatPesanan = () => {
         </div>
       )}
 
-      {/* Modal Selesai (Disembunyikan untuk hemat baris, sama dengan sebelumnya) */}
+      {/* Modal Selesai */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-[0_20px_40px_rgba(0,0,0,0.1)] flex flex-col items-center text-center">
