@@ -82,38 +82,43 @@ const KatalogKopi = () => {
           </div>
 
           {/* ======================================================= */}
-          {/* MENU KATEGORI ICONS (SHOPEE STYLE) */}
+          {/* MENU KATEGORI ICONS (CUSTOM COFFEE SVGS) */}
           {/* ======================================================= */}
           <section className="bg-white border-b border-[#EFEFEF] py-6 shadow-[0_4px_10px_rgba(0,0,0,0.02)] relative z-10 -mt-4 rounded-t-3xl sm:rounded-none sm:mt-0">
             <div className="max-w-[1300px] mx-auto px-[5%]">
               <div className="flex justify-start sm:justify-center gap-6 sm:gap-16 overflow-x-auto hide-scrollbar pb-2 pt-2">
                 
-                {/* Kategori 1: Robusta */}
+                {/* Kategori 1: Robusta (Icon Biji Kopi) */}
                 <Link to="/semua-kopi?search=robusta" className="flex flex-col items-center gap-3 group no-underline min-w-[80px]">
                   <div className="w-14 h-14 sm:w-[68px] sm:h-[68px] rounded-2xl bg-white border border-[#EFEFEF] shadow-sm flex items-center justify-center text-[#A86431] group-hover:border-[#A86431] group-hover:shadow-[0_8px_20px_rgba(168,100,49,0.15)] transition-all duration-300 group-hover:-translate-y-1">
-                    <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z"></path>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 10s1-1 3-1 3 1 3 1M9 14s1-1 3-1 3 1 3 1"></path>
+                    <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                      {/* Biji kopi dengan garis tengah 'S' */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6.5c1.5 2.5 1.5 8.5-1 11"></path>
                     </svg>
                   </div>
                   <span className="text-[12px] sm:text-[14px] font-bold text-[#1A1D20] group-hover:text-[#A86431] transition-colors">Robusta</span>
                 </Link>
 
-                {/* Kategori 2: Arabika */}
+                {/* Kategori 2: Arabika (Icon Cangkir Kopi Panas) */}
                 <Link to="/semua-kopi?search=arabika" className="flex flex-col items-center gap-3 group no-underline min-w-[80px]">
                   <div className="w-14 h-14 sm:w-[68px] sm:h-[68px] rounded-2xl bg-white border border-[#EFEFEF] shadow-sm flex items-center justify-center text-[#10B981] group-hover:border-[#10B981] group-hover:shadow-[0_8px_20px_rgba(16,185,129,0.15)] transition-all duration-300 group-hover:-translate-y-1">
-                    <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+                    <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                      {/* Mug & Asap */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 1v3M10 1v3M14 1v3"></path>
                     </svg>
                   </div>
                   <span className="text-[12px] sm:text-[14px] font-bold text-[#1A1D20] group-hover:text-[#10B981] transition-colors">Arabika</span>
                 </Link>
 
-                {/* Kategori 3: House Blend */}
+                {/* Kategori 3: House Blend (Icon Kemasan/Bungkus Kopi) */}
                 <Link to="/semua-kopi?search=blend" className="flex flex-col items-center gap-3 group no-underline min-w-[80px]">
                   <div className="w-14 h-14 sm:w-[68px] sm:h-[68px] rounded-2xl bg-white border border-[#EFEFEF] shadow-sm flex items-center justify-center text-[#3B82F6] group-hover:border-[#3B82F6] group-hover:shadow-[0_8px_20px_rgba(59,130,246,0.15)] transition-all duration-300 group-hover:-translate-y-1">
-                    <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                      {/* Paper Bag Kopi */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 4V2h10v2M5 8h14l-1.5 14h-11L5 8z"></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 12a2 2 0 100 4 2 2 0 000-4z"></path>
                     </svg>
                   </div>
                   <span className="text-[12px] sm:text-[14px] font-bold text-[#1A1D20] group-hover:text-[#3B82F6] transition-colors">House Blend</span>
@@ -223,7 +228,6 @@ const KatalogKopi = () => {
                       <p className="text-[14px] md:text-[16px] text-[#6C757D] m-0">Jelajahi koleksi lengkap biji kopi segar.</p>
                     </div>
                     
-                    {/* Tombol Lihat Semua (Tampil di Desktop & Mobile) */}
                     <Link to="/semua-kopi" className="hidden sm:inline-flex items-center gap-2 px-6 py-3 bg-white border border-[#EFEFEF] rounded-full text-[#1A1D20] font-bold hover:border-[#A86431] hover:text-[#A86431] transition-all no-underline shadow-sm group whitespace-nowrap">
                       Lihat Semua <span className="hidden md:inline">Kopi</span>
                       <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" className="group-hover:translate-x-1 transition-transform"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
@@ -239,11 +243,13 @@ const KatalogKopi = () => {
                   </div>
                   
                   {/* Tombol Lihat Semua Khusus HP (Full width di bawah grid) */}
-                  <div className="mt-8 text-center sm:hidden">
-                    <Link to="/semua-kopi" className="inline-flex items-center justify-center gap-2 w-full py-3.5 bg-white border-2 border-[#A86431] text-[#A86431] font-bold rounded-xl no-underline shadow-sm">
-                      Jelajahi Semua Katalog <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                    </Link>
-                  </div>
+                  {products.length > 8 && (
+                    <div className="mt-8 text-center sm:hidden">
+                      <Link to="/semua-kopi" className="inline-flex items-center justify-center gap-2 w-full py-3.5 bg-white border-2 border-[#A86431] text-[#A86431] font-bold rounded-xl no-underline shadow-sm">
+                        Jelajahi Semua Katalog <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                      </Link>
+                    </div>
+                  )}
 
                 </section>
               </>
