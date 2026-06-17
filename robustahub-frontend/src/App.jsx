@@ -18,25 +18,6 @@ import DetailPesananPetani from './pages/DetailPesananPetani';
 import LacakPesanan from './pages/LacakPesanan';
 import SemuaKopi from './pages/SemuaKopi';
 
-
-
-// Membuat halaman dummy sementara untuk melihat hasil komponen
-const BerandaSementara = () => {
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Etalase Biji Kopi</h1>
-      
-      {/* Grid responsif: 1 kolom di HP, 2 di Tablet, 3 di Desktop, 4 di Layar Besar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-        {/* Kita panggil komponen ProductCard beberapa kali untuk simulasi */}
-        <ProductCard />
-        <ProductCard product={{ name: "Fine Robusta Premium", price: 65000, processingMethod: "Honey" }} />
-        <ProductCard product={{ name: "Robusta Grade 1", price: 55000, processingMethod: "Washed" }} />
-      </div>
-    </div>
-  );
-};
-
 function App() {
   return (
     <Router>
@@ -51,9 +32,11 @@ function App() {
           <Route path="/pengaturan" element={<PengaturanPetani />} />
           <Route path="/produk/:id" element={<DetailProduk />} />
           <Route path="/keranjang" element={<KeranjangBelanja />} />
-          <Route path="/checkout" element={<CheckoutPembayaran />} />
+          
+          {/* 📍 FIX: UBAH PATH DI BAWAH INI AGAR COCOK DENGAN KODE CHECKOUT */}
+          <Route path="/checkout-pembayaran" element={<CheckoutPembayaran />} />
 
-          {/* Rute lain (Nanti kita tambahkan Navbar di dalamnya) */}
+          {/* Rute lain */}
           <Route path="/katalog" element={<KatalogKopi />} />
           <Route path="/profil" element={<ProfilPembeli />} />
           <Route path="/riwayat" element={<RiwayatPesanan />} />

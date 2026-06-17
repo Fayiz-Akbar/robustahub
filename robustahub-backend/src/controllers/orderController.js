@@ -9,7 +9,8 @@ const { Invoice } = xenditClient;
 const createOrder = async (req, res) => {
   try {
     const buyerId = req.user.id;
-    const { items, courierName, shippingCost } = req.body;
+    // 📍 FIX: Menangkap 'paymentMethod' yang dikirim dari frontend React
+    const { items, courierName, shippingCost, paymentMethod } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: 'Keranjang belanja kosong!' });
@@ -61,15 +62,28 @@ const createOrder = async (req, res) => {
       return order;
     });
 
-    // 2. MINTA LINK PEMBAYARAN KE XENDIT
-    const xenditInvoice = await Invoice.createInvoice({
-      data: {
-        externalId: newOrder.id, 
-        amount: newOrder.totalAmount,
-        description: `Pembayaran Biji Kopi RobustaHub - Order ${newOrder.id}`,
-        successRedirectUrl: 'http://localhost:5173/riwayat',
-        failureRedirectUrl: 'http://localhost:5173/keranjang',
+    // 2. STRATEGI PEMBATASAN CHANNEL PEMBAYARAN DI INVOICE XENDIT
+    const invoiceData = {
+      externalId: newOrder.id, 
+      amount: newOrder.totalAmount,
+      description: `Pembayaran Biji Kopi RobustaHub - Order ${newOrder.id}`,
+      successRedirectUrl: 'http://localhost:5173/riwayat',
+      failureRedirectUrl: 'http://localhost:5173/keranjang',
+    };
+
+    // 📍 JIKA USER MEMILIH CHANNEL SPESIFIK (BUKAN 'ALL'), BATASI PILIHAN DI INVOICE XENDIT
+    if (paymentMethod && paymentMethod !== 'ALL') {
+      if (paymentMethod === 'QRIS' || paymentMethod === 'ALFAMART') {
+        // Jika berupa QRIS atau gerai ritel Alfamart
+        invoiceData.paymentChannels = [paymentMethod.toUpperCase()];
+      } else {
+        // Jika berupa Virtual Account (BCA, MANDIRI, BRI, BNI, PERMATA), Xendit butuh suffix '_VA'
+        invoiceData.paymentChannels = [`${paymentMethod.toUpperCase()}_VA`];
       }
+    }
+
+    const xenditInvoice = await Invoice.createInvoice({
+      data: invoiceData
     });
 
     // 3. SIMPAN LINK PEMBAYARAN KE TABEL PAYMENT
