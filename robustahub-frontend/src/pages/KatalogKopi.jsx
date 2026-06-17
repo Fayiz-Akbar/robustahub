@@ -8,7 +8,7 @@ const KatalogKopi = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
 
@@ -17,14 +17,14 @@ const KatalogKopi = () => {
       try {
         const response = await fetch('http://localhost:5000/api/products');
         if (!response.ok) throw new Error('Gagal mengambil data dari server');
-        
+
         const result = await response.json();
         const activeProducts = result.data.filter(p => p.isActive !== false);
-        
+
         // Sorting produk berdasarkan yang PALING BANYAK TERJUAL
         activeProducts.sort((a, b) => (b.sold || 0) - (a.sold || 0));
-        
-        setProducts(activeProducts); 
+
+        setProducts(activeProducts);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -35,14 +35,14 @@ const KatalogKopi = () => {
     fetchProducts();
   }, []);
 
-  const filteredProducts = products.filter(product => 
+  const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Ambil 2 produk terlaris (sudah di-sort di atas berdasarkan 'sold')
-  const topProducts = products.slice(0, 2); 
+  const topProducts = products.slice(0, 2);
   // Ambil sisa produk untuk grid bawah
-  const displayProducts = products.slice(0, 8); 
+  const displayProducts = products.slice(0, 8);
 
   const isSearching = searchQuery.length > 0;
 
@@ -67,13 +67,13 @@ const KatalogKopi = () => {
           <div className="relative overflow-hidden">
             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=1600&q=80')" }}></div>
             <div className="absolute inset-0 bg-gradient-to-r from-[#3A2210]/95 via-[#3A2210]/80 to-transparent"></div>
-            
+
             <div className="relative pt-[80px] lg:pt-[120px] px-[5%] pb-[80px] lg:pb-[120px] max-w-[1300px] mx-auto text-left flex flex-col justify-center min-h-[35vh]">
               <span className="inline-block px-4 py-1.5 rounded-full bg-[#A86431]/20 text-[#FDF9F5] border border-[#A86431]/30 font-semibold text-[13px] tracking-widest uppercase mb-6 backdrop-blur-sm w-fit">
                 100% Panen Lokal
               </span>
               <h1 className="text-[36px] md:text-[56px] lg:text-[64px] m-0 mb-4 tracking-tight leading-[1.1] font-bold text-white max-w-[800px]">
-                Biji Kopi Asli <br className="hidden sm:block"/><span className="text-[#A86431]">Langsung dari Kebun</span>
+                Biji Kopi Asli <br className="hidden sm:block" /><span className="text-[#A86431]">Langsung dari Kebun</span>
               </h1>
               <p className="text-[15px] md:text-[18px] text-gray-200 max-w-[600px] m-0 leading-relaxed font-light">
                 Platform B2B terpercaya. Temukan biji kopi Robusta & Arabika untuk kebutuhan Coffee Shop Anda dengan harga grosir terbaik.
@@ -87,7 +87,7 @@ const KatalogKopi = () => {
           <section className="bg-white border-b border-[#EFEFEF] py-6 shadow-[0_4px_10px_rgba(0,0,0,0.02)] relative z-10 -mt-4 rounded-t-3xl sm:rounded-none sm:mt-0">
             <div className="max-w-[1300px] mx-auto px-[5%]">
               <div className="flex justify-start sm:justify-center gap-6 sm:gap-16 overflow-x-auto hide-scrollbar pb-2 pt-2">
-                
+
                 {/* Kategori 1: Robusta (Icon Biji Kopi) */}
                 <Link to="/semua-kopi?search=robusta" className="flex flex-col items-center gap-3 group no-underline min-w-[80px]">
                   <div className="w-14 h-14 sm:w-[68px] sm:h-[68px] rounded-2xl bg-white border border-[#EFEFEF] shadow-sm flex items-center justify-center text-[#A86431] group-hover:border-[#A86431] group-hover:shadow-[0_8px_20px_rgba(168,100,49,0.15)] transition-all duration-300 group-hover:-translate-y-1">
@@ -131,7 +131,7 @@ const KatalogKopi = () => {
       )}
 
       <main className="pb-[80px]">
-        
+
         {isLoading && <div className="text-center py-32 text-xl font-bold text-[#A86431]">Memanen data kopi terbaik... ☕</div>}
         {error && <div className="text-center py-20 text-red-500 font-semibold">Ups! Terjadi kesalahan: {error}</div>}
 
@@ -156,7 +156,7 @@ const KatalogKopi = () => {
                       Waduh, kopi "{searchQuery}" tidak ditemukan di kebun mana pun.
                     </div>
                   ) : (
-                    filteredProducts.slice(0,8).map((item) => <ProductCard key={item.id} product={item} />)
+                    filteredProducts.slice(0, 8).map((item) => <ProductCard key={item.id} product={item} />)
                   )}
                 </div>
               </section>
@@ -168,10 +168,10 @@ const KatalogKopi = () => {
                 {topProducts.length > 0 && (
                   <section className="bg-white py-[60px] md:py-[80px] border-b border-[#EFEFEF]">
                     <div className="max-w-[1300px] mx-auto px-[5%]">
-                      
+
                       <div className="flex flex-col items-center text-center mb-10 md:mb-12">
                         <span className="text-[#A86431] font-bold tracking-widest uppercase text-[11px] md:text-[12px] mb-2 flex items-center gap-2">
-                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> 
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                           Banyak Diminati
                         </span>
                         <h2 className="text-[26px] md:text-[36px] font-bold text-[#3A2210] m-0">Produk Terlaris Bulan Ini</h2>
@@ -180,9 +180,9 @@ const KatalogKopi = () => {
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                         {topProducts.map((product) => (
                           <Link to={`/produk/${product.id}`} key={`top-${product.id}`} className="flex flex-col md:flex-row bg-[#FDF9F5] border border-[#EFEFEF] rounded-[20px] md:rounded-[24px] overflow-hidden hover:shadow-[0_20px_40px_rgba(168,100,49,0.08)] hover:-translate-y-1 transition-all duration-300 no-underline text-inherit group relative">
-                            
+
                             <div className="absolute top-4 left-4 z-10 bg-[#EF4444] text-white text-[10px] md:text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1.5">
-                              <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                              <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" /></svg>
                               Terlaris
                             </div>
 
@@ -195,9 +195,9 @@ const KatalogKopi = () => {
                                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
                                 {product.petani?.name || 'Petani Lokal Lampung'}
                               </div>
-                              
+
                               <h3 className="text-[18px] md:text-[22px] font-bold text-[#1A1D20] m-0 mb-2 md:mb-3 leading-snug group-hover:text-[#A86431] transition-colors">{product.name}</h3>
-                              
+
                               <p className="text-[13px] md:text-[14px] text-[#6C757D] m-0 mb-4 md:mb-6 line-clamp-2 leading-relaxed">
                                 {product.description || `Biji kopi ${product.category.toLowerCase()} pilihan dengan kualitas terbaik.`}
                               </p>
@@ -221,13 +221,13 @@ const KatalogKopi = () => {
 
                 {/* SEGMEN SEMUA PRODUK (GRID NORMAL MAKSIMAL 8) */}
                 <section className="max-w-[1300px] mx-auto px-[5%] pt-[60px] md:pt-[80px]">
-                  
+
                   <div className="flex flex-row justify-between items-end mb-8 md:mb-10 gap-4 border-b border-[#EFEFEF] pb-4 sm:border-none sm:pb-0">
                     <div>
                       <h2 className="text-[24px] md:text-[32px] font-bold text-[#3A2210] m-0 mb-1 md:mb-2">Kopi Pilihan RobustaHub</h2>
                       <p className="text-[14px] md:text-[16px] text-[#6C757D] m-0">Jelajahi koleksi lengkap biji kopi segar.</p>
                     </div>
-                    
+
                     <Link to="/semua-kopi" className="hidden sm:inline-flex items-center gap-2 px-6 py-3 bg-white border border-[#EFEFEF] rounded-full text-[#1A1D20] font-bold hover:border-[#A86431] hover:text-[#A86431] transition-all no-underline shadow-sm group whitespace-nowrap">
                       Lihat Semua <span className="hidden md:inline">Kopi</span>
                       <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" className="group-hover:translate-x-1 transition-transform"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
@@ -241,7 +241,7 @@ const KatalogKopi = () => {
                       displayProducts.map((item) => <ProductCard key={item.id} product={item} />)
                     )}
                   </div>
-                  
+
                   {/* Tombol Lihat Semua Khusus HP (Full width di bawah grid) */}
                   {products.length > 8 && (
                     <div className="mt-8 text-center sm:hidden">

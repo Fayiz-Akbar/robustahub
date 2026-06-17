@@ -7,9 +7,10 @@ const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false); 
   
   // ==========================================
-  // STATE BARU UNTUK JUMLAH NOTIFIKASI
+  // STATE DINAMIS UNTUK NOTIFIKASI & KERANJANG
   // ==========================================
   const [unreadCount, setUnreadCount] = useState(0);
+  const [cartCount, setCartCount] = useState(0); // State untuk Jumlah Item Keranjang
 
   const navigate = useNavigate();
 
@@ -26,9 +27,25 @@ const Navbar = () => {
   const displayInitials = user ? user.name.substring(0, 2).toUpperCase() : '';
 
   // ==========================================
-  // FUNGSI MENGAMBIL JUMLAH NOTIFIKASI UNREAD
+  // FUNGSI MENGHITUNG ISI KERANJANG
+  // ==========================================
+  const updateCartBadge = () => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    // Menghitung jumlah jenis varian kopi unik di dalam keranjang
+    setCartCount(cart.length);
+  };
+
+  // ==========================================
+  // EFFECT UNTUK EVENT LISTENERS & NOTIFIKASI
   // ==========================================
   useEffect(() => {
+    // 1. Hitung pertama kali saat komponen dimuat
+    updateCartBadge();
+
+    // 2. Dengarkan pemicu 'cartUpdate' dari ProductCard secara global
+    window.addEventListener('cartUpdate', updateCartBadge);
+
+    // 3. Ambil jumlah notifikasi unread dari server
     if (isLoggedIn && token) {
       const fetchUnreadNotifs = async () => {
         try {
@@ -37,7 +54,6 @@ const Navbar = () => {
           });
           if (response.ok) {
             const result = await response.json();
-            // Hitung hanya yang isRead-nya false
             const unread = result.data.filter(notif => !notif.isRead).length;
             setUnreadCount(unread);
           }
@@ -47,10 +63,12 @@ const Navbar = () => {
       };
 
       fetchUnreadNotifs();
-      // Opsional: Polling tiap 30 detik agar selalu update (bisa diaktifkan jika perlu)
-      // const interval = setInterval(fetchUnreadNotifs, 30000);
-      // return () => clearInterval(interval);
     }
+
+    // Bersihkan listener saat komponen dibongkar
+    return () => {
+      window.removeEventListener('cartUpdate', updateCartBadge);
+    };
   }, [isLoggedIn, token]);
 
   const handleSearch = (e) => {
@@ -70,7 +88,8 @@ const Navbar = () => {
   return (
     <>
       <nav className="bg-white px-[5%] py-4 flex justify-between items-center shadow-[0_4px_20px_rgba(0,0,0,0.02)] sticky top-0 z-[100]">
-        <Link to="/katalog" className="text-[24px] font-bold text-[#3A2210] flex items-center gap-2">
+        {/* LOGO DIKEMBALIKAN KE VERSI ORIGINAL BAWAAN AWAL */}
+        <Link to="/katalog" className="text-[24px] font-bold text-[#3A2210] flex items-center gap-2 no-underline">
           <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" color="#A86431"><path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
           RobustaHub
         </Link>
@@ -92,17 +111,22 @@ const Navbar = () => {
         <div className="hidden lg:flex items-center gap-5">
           {isLoggedIn ? (
             <>
-              {/* Keranjang HANYA untuk PEMBELI */}
+              {/* Keranjang HANYA untuk ROLE PEMBELI (COFFEE_SHOP) */}
               {userRole === 'COFFEE_SHOP' && (
-                <Link to="/keranjang" className="text-[#1A1D20] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">
+                <Link to="/keranjang" className="relative text-[#1A1D20] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">
                   <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                  {/* Lencana Angka Keranjang Belanja Aktif */}
+                  {cartCount > 0 && (
+                    <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 bg-[#3A2210] text-white text-[10px] font-bold min-w-[18px] px-1 h-[18px] flex items-center justify-center rounded-full border-2 border-white">
+                      {cartCount}
+                    </span>
+                  )}
                 </Link>
               )}
               
-              {/* NOTIFIKASI UNTUK SEMUA (Pembeli & Petani) */}
+              {/* NOTIFIKASI UNTUK SEMUA */}
               <Link to="/notifikasi" className="relative text-[#1A1D20] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F8F9FA] hover:text-[#A86431] transition-colors">
                 <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                {/* Lencana Angka Dinamis */}
                 {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 bg-[#A86431] text-white text-[10px] font-bold min-w-[18px] px-1 h-[18px] flex items-center justify-center rounded-full border-2 border-white">
                     {unreadCount > 99 ? '99+' : unreadCount}
@@ -181,7 +205,16 @@ const Navbar = () => {
             <>
               {userRole === 'COFFEE_SHOP' && (
                 <>
-                  <Link to="/keranjang" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-lg bg-[#F8F9FA]"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg> Keranjang Belanja</Link>
+                  <Link to="/keranjang" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between p-3 rounded-lg bg-[#F8F9FA]">
+                    <span className="flex items-center gap-3">
+                      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg> 
+                      Keranjang Belanja
+                    </span>
+                    {/* Badge Keranjang Mobile */}
+                    {cartCount > 0 && (
+                      <span className="bg-[#3A2210] text-white text-[12px] font-bold px-2.5 py-0.5 rounded-full">{cartCount}</span>
+                    )}
+                  </Link>
                   <Link to="/riwayat" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg> Riwayat Pesanan</Link>
                 </>
               )}
@@ -190,7 +223,6 @@ const Navbar = () => {
                 <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 p-3"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg> Dashboard Saya</Link>
               )}
               
-              {/* Notifikasi Mobile untuk SEMUA ROLE */}
               <Link to="/notifikasi" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center justify-between p-3">
                 <span className="flex items-center gap-3">
                   <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg> 
