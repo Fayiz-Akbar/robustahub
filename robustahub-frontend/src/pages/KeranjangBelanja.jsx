@@ -1,173 +1,203 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import { Link, useNavigate } from 'react-router-dom';
+import Navbar from '../components/navbar';
+import Footer from '../components/Footer';
 
 const KeranjangBelanja = () => {
-  const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
+  const navigate = useNavigate();
 
-  // Mengambil data keranjang dari localStorage saat halaman dimuat
+  // Ambil data keranjang dari memori browser
   useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (!user) {
-      alert('Silakan login terlebih dahulu untuk melihat keranjang Anda.');
-      navigate('/');
-      return;
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    setCartItems(cart);
+  }, []);
+
+  // Helper pengubah format gambar JSON Array
+  const getImageUrl = (imageUrl) => {
+    let finalImageUrl = "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=400&q=80";
+    if (imageUrl) {
+      try {
+        const parsedImage = JSON.parse(imageUrl);
+        finalImageUrl = Array.isArray(parsedImage) ? `http://localhost:5000${parsedImage[0]}` : `http://localhost:5000${imageUrl}`;
+      } catch (e) { finalImageUrl = `http://localhost:5000${imageUrl}`; }
     }
-
-    const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
-    setCartItems(savedCart);
-  }, [navigate]);
-
-  // Fungsi untuk menyimpan perubahan ke localStorage dan State
-  const updateCart = (newCart) => {
-    setCartItems(newCart);
-    localStorage.setItem('cart', JSON.stringify(newCart));
-    // Trigger event agar badge navbar (jika ada) ikut terupdate
-    window.dispatchEvent(new Event('cartUpdated'));
+    return finalImageUrl;
   };
 
-  // Logika Tambah Kuantitas
-  const handleIncrease = (index) => {
-    const newCart = [...cartItems];
-    newCart[index].quantity += 1;
-    updateCart(newCart);
+  // Modifikasi kuantitas pesanan grosir (Plus / Minus)
+  const updateQuantity = (id, newQty) => {
+    const updatedCart = cartItems.map(item => {
+      if (item.id === id) {
+        const min = item.minOrder || 5;
+        if (newQty < min) {
+          alert(`Minimal pembelian untuk ${item.name} adalah ${min} kg!`);
+          return item;
+        }
+        if (newQty > item.stock) {
+          alert(`Stok tidak mencukupi! Maksimal tersedia adalah ${item.stock} kg.`);
+          return item;
+        }
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    });
+
+    setCartItems(updatedCart);
+    localStorage.setItem('cart', JSON.stringify(updatedCart));
+    window.dispatchEvent(new Event('cartUpdate')); // Update angka badge navbar secara live
   };
 
-  // Logika Kurangi Kuantitas
-  const handleDecrease = (index) => {
-    const newCart = [...cartItems];
-    if (newCart[index].quantity > 1) { // Asumsi minimal beli 1kg jika sudah masuk keranjang
-      newCart[index].quantity -= 1;
-      updateCart(newCart);
-    }
+  // Hapus item kopi dari daftar belanjaan
+  const removeItem = (id) => {
+    const updatedCart = cartItems.filter(item => item.id !== id);
+    setCartItems(updatedCart);
+    localStorage.setItem('cart', JSON.stringify(updatedCart));
+    window.dispatchEvent(new Event('cartUpdate')); // Update angka badge navbar secara live
   };
 
-  // Logika Hapus Item
-  const handleRemoveItem = (index) => {
-    if (window.confirm('Yakin ingin menghapus kopi ini dari keranjang?')) {
-      const newCart = cartItems.filter((_, i) => i !== index);
-      updateCart(newCart);
-    }
-  };
+  const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const totalEstimasi = subtotal;
 
-  // Menghitung Total Harga & Total Berat
-  const totalWeight = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const totalPrice = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const handleCheckout = () => {
+    if (cartItems.length === 0) return;
+    navigate('/checkout-pembayaran');
+  };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans text-[#1A1D20]">
+    <div className="bg-[#F8F9FA] min-h-screen font-sans text-[#1A1D20]">
       <Navbar />
 
-      <div className="max-w-[1200px] mx-auto w-full px-[5%] py-8">
-        <h1 className="text-[24px] lg:text-[28px] font-bold text-[#1A1D20] mb-8">Keranjang Belanja</h1>
+      <main className="max-w-[1300px] mx-auto px-[5%] py-10">
+        <h1 className="text-[28px] font-black text-[#3A2210] mb-8">Keranjang Belanja</h1>
 
         {cartItems.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-[#EFEFEF] p-12 text-center shadow-sm flex flex-col items-center justify-center">
-            <svg className="w-20 h-20 text-[#EFEFEF] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-            <h2 className="text-[20px] font-bold text-[#1A1D20] mb-2">Keranjang Anda Masih Kosong</h2>
-            <p className="text-[#6C757D] mb-6">Yuk, cari biji kopi Robusta terbaik untuk kedai Anda!</p>
-            <Link to="/katalog" className="bg-[#3A2210] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#A86431] transition-colors">
-              Mulai Belanja
+          <div className="bg-white rounded-3xl p-16 text-center border border-[#E5E7EB] shadow-sm max-w-[600px] mx-auto">
+            <div className="w-16 h-16 mx-auto text-gray-300 mb-6">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+              </svg>
+            </div>
+            <h3 className="text-[18px] font-bold text-[#1A1D20] mb-2">Keranjang Anda Masih Kosong</h3>
+            <p className="text-gray-500 text-[14px] mb-8 max-w-[360px] mx-auto">Silakan jelajahi katalog pilihan kopi kami dan temukan biji kopi berkualitas langsung dari petani lokal Lampung.</p>
+            <Link to="/katalog" className="inline-block bg-[#A86431] text-white px-8 py-3.5 rounded-full font-bold text-[14px] no-underline hover:bg-[#3A2210] transition-colors shadow-sm">
+              Jelajahi Katalog Kopi
             </Link>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
             
-            {/* KIRI: Daftar Item Keranjang */}
-            <div className="flex-[2] flex flex-col gap-4">
-              {cartItems.map((item, index) => (
-                <div key={index} className="bg-white p-5 lg:p-6 rounded-2xl border border-[#EFEFEF] flex flex-col sm:flex-row gap-6 shadow-sm relative">
+            {/* DAFTAR PRODUK KOPI (SISI KIRI) */}
+            <div className="flex flex-col gap-4">
+              {cartItems.map((item) => (
+                /* 📍 DI SINI PERBAIKANNYA: Menambahkan pr-10 dan sm:pr-14 agar memberi ruang aman untuk tombol X */
+                <div key={item.id} className="bg-white rounded-2xl p-4 pr-10 sm:p-5 sm:pr-14 border border-[#E5E7EB] shadow-sm flex flex-col sm:flex-row gap-5 items-start sm:items-center relative group">
                   
-                  {/* Gambar Produk */}
-                  <img 
-                    src={item.image || "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=200&q=80"} 
-                    alt={item.name} 
-                    className="w-full sm:w-[120px] h-[120px] rounded-xl object-cover border border-[#EFEFEF]" 
-                  />
-                  
-                  {/* Detail Produk */}
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="text-[13px] text-[#A86431] font-semibold mb-1 flex items-center gap-1">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                        {item.farmName}
-                      </div>
-                      <h3 className="text-[16px] lg:text-[18px] font-bold text-[#1A1D20] m-0 mb-2 leading-tight">
-                        {item.name}
-                      </h3>
-                      <div className="text-[14px] text-[#6C757D] font-medium">
-                        Rp {item.price.toLocaleString('id-ID')} <span className="text-[12px]">/ Kg</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4 sm:mt-0">
-                      {/* Kontrol Kuantitas */}
-                      <div className="flex items-center border border-[#EFEFEF] rounded-lg overflow-hidden h-[36px]">
-                        <button onClick={() => handleDecrease(index)} className="w-[36px] h-full bg-[#F8F9FA] hover:bg-[#EFEFEF] text-[18px] font-medium transition-colors">-</button>
-                        <input type="text" value={item.quantity} readOnly className="w-[50px] h-full text-center border-x border-[#EFEFEF] font-bold text-[14px] outline-none bg-white" />
-                        <button onClick={() => handleIncrease(index)} className="w-[36px] h-full bg-[#F8F9FA] hover:bg-[#EFEFEF] text-[18px] font-medium transition-colors">+</button>
-                      </div>
-
-                      {/* Tombol Hapus (Mobile ada di bawah, Desktop bisa di kanan) */}
-                      <button 
-                        onClick={() => handleRemoveItem(index)}
-                        className="text-[#EF4444] hover:bg-[#FEF2F2] p-2 rounded-lg transition-colors flex items-center gap-1 text-[13px] font-semibold"
-                      >
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        <span className="hidden sm:inline">Hapus</span>
-                      </button>
-                    </div>
+                  {/* Foto Kopi */}
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
+                    <img 
+                      src={getImageUrl(item.imageUrl)} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => e.target.src = "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=400&q=80"}
+                    />
                   </div>
 
-                  {/* Subtotal Per Item (Desktop) */}
-                  <div className="hidden sm:flex flex-col items-end justify-center border-l border-[#EFEFEF] pl-6 min-w-[120px]">
-                    <span className="text-[12px] text-[#6C757D] mb-1">Subtotal</span>
-                    <span className="text-[18px] font-bold text-[#3A2210]">
-                      Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                  {/* Keterangan Teks Nama Produk */}
+                  <div className="min-w-0 flex-1">
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-[#A86431] bg-[#FDF9F5] px-2 py-0.5 rounded border border-[#A86431]/20 mb-1">
+                      {item.category}
                     </span>
+                    <h3 className="text-[16px] sm:text-[18px] font-bold text-[#1A1D20] m-0 mb-1 truncate">{item.name}</h3>
+                    <div className="text-[12px] text-gray-500 flex items-center gap-1">
+                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                      {item.petani?.name || 'Petani Lokal'}
+                    </div>
+                    {/* Tampilan harga khusus HP (Mobile) */}
+                    <div className="text-[15px] font-black text-[#A86431] mt-2 sm:hidden">
+                      Rp {item.price.toLocaleString('id-ID')} <span className="text-[11px] font-normal text-gray-400">/Kg</span>
+                    </div>
                   </div>
+
+                  {/* Alat Pengontrol Kiloan Pesanan */}
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end gap-4 w-full sm:w-auto shrink-0 justify-between sm:justify-start border-t border-dashed border-gray-100 sm:border-none pt-3 sm:pt-0">
+                    <div className="hidden sm:block text-[16px] font-black text-[#3A2210]">
+                      Rp {item.price.toLocaleString('id-ID')} <span className="text-[12px] font-normal text-gray-400">/Kg</span>
+                    </div>
+
+                    <div className="flex items-center border border-gray-200 rounded-xl bg-white overflow-hidden shadow-sm h-9">
+                      <button 
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        className="w-9 h-full bg-gray-50 border-none font-bold text-[16px] text-gray-600 hover:bg-gray-100 active:bg-gray-200 cursor-pointer transition-colors"
+                      >
+                        &minus;
+                      </button>
+                      <span className="w-12 text-center font-extrabold text-[14px] text-[#3A2210]">
+                        {item.quantity} <span className="text-[10px] font-normal text-gray-400 block -mt-1">kg</span>
+                      </span>
+                      <button 
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        className="w-9 h-full bg-gray-50 border-none font-bold text-[16px] text-gray-600 hover:bg-gray-100 active:bg-gray-200 cursor-pointer transition-colors"
+                      >
+                        &#43;
+                  </button>
+                    </div>
+                  </div>
+
+                  {/* Tombol Silang Hapus Akun/Item */}
+                  <button 
+                    onClick={() => removeItem(item.id)}
+                    className="absolute top-3 right-3 sm:top-5 sm:right-4 bg-transparent border-none text-gray-400 hover:text-red-500 cursor-pointer text-[20px] p-1 transition-colors"
+                    title="Hapus Kopi"
+                  >
+                    &times;
+                  </button>
 
                 </div>
               ))}
             </div>
 
-            {/* KANAN: Ringkasan Belanja */}
-            <div className="flex-1">
-              <div className="bg-white p-6 lg:p-8 rounded-2xl border border-[#A86431] shadow-[0_8px_24px_rgba(168,100,49,0.08)] sticky top-[100px]">
-                <h3 className="text-[18px] font-bold text-[#1A1D20] border-b border-[#EFEFEF] pb-4 mb-4">
-                  Ringkasan Belanja
-                </h3>
-                
-                <div className="flex justify-between items-center text-[14px] text-[#6C757D] mb-3">
-                  <span>Total Harga ({cartItems.length} Barang)</span>
-                  <span className="text-[#1A1D20] font-semibold">Rp {totalPrice.toLocaleString('id-ID')}</span>
-                </div>
-                
-                <div className="flex justify-between items-center text-[14px] text-[#6C757D] mb-6 pb-6 border-b border-[#EFEFEF]">
-                  <span>Total Berat</span>
-                  <span className="text-[#1A1D20] font-semibold">{totalWeight} Kg</span>
-                </div>
-                
-                <div className="flex justify-between items-center mb-6">
-                  <span className="text-[16px] font-bold text-[#1A1D20]">Subtotal</span>
-                  <span className="text-[24px] font-bold text-[#3A2210]">Rp {totalPrice.toLocaleString('id-ID')}</span>
-                </div>
-                
-                <button 
-                  onClick={() => navigate('/checkout')}
-                  className="w-full py-3.5 bg-[#3A2210] text-white rounded-xl font-bold text-[15px] hover:bg-[#A86431] hover:-translate-y-0.5 hover:shadow-[0_6px_15px_rgba(168,100,49,0.3)] transition-all flex justify-center items-center gap-2"
-                >
-                  Lanjut ke Checkout
-                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                </button>
+            {/* RINGKASAN SUB TOTAL (SISI KANAN) */}
+            <div className="bg-white rounded-3xl p-6 border border-[#E5E7EB] shadow-sm lg:sticky lg:top-24">
+              <h3 className="m-0 text-[18px] font-bold text-[#3A2210] border-b border-[#EFEFEF] pb-4 mb-4">Ringkasan Belanja</h3>
+              
+              <div className="flex justify-between items-center text-[14px] text-gray-500 mb-3">
+                <span>Total Muatan ({cartItems.length} varian)</span>
+                <span className="font-semibold text-[#1A1D20]">{cartItems.reduce((acc, item) => acc + item.quantity, 0)} kg</span>
               </div>
+              
+              <div className="flex justify-between items-center text-[14px] text-gray-500 mb-4 pb-4 border-b border-dashed border-[#EFEFEF]">
+                <span>Subtotal Produk</span>
+                <span className="font-semibold text-[#1A1D20]">Rp {subtotal.toLocaleString('id-ID')}</span>
+              </div>
+
+              <div className="flex justify-between items-end mb-6">
+                <div>
+                  <div className="text-[14px] font-bold text-[#3A2210]">Total Tagihan</div>
+                  <div className="text-[11px] text-gray-400 mt-0.5">*Belum termasuk ongkos kirim kargo</div>
+                </div>
+                <div className="text-[22px] font-black text-[#A86431]">
+                  Rp {totalEstimasi.toLocaleString('id-ID')}
+                </div>
+              </div>
+
+              <button 
+                onClick={handleCheckout}
+                className="w-full py-3.5 bg-[#3A2210] text-white border-none font-bold text-[15px] rounded-xl hover:bg-[#A86431] transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+              >
+                Lanjut ke Pembayaran
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+              </button>
+
+              <Link to="/katalog" className="block text-center text-[13px] text-[#A86431] font-bold mt-4 hover:text-[#3A2210] no-underline">
+                &larr; Tambah Biji Kopi Lain
+              </Link>
             </div>
 
           </div>
         )}
-
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 };
