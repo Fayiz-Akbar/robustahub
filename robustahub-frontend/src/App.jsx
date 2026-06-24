@@ -17,6 +17,7 @@ import Notifikasi from './pages/Notifikasi';
 import DetailPesananPetani from './pages/DetailPesananPetani';
 import LacakPesanan from './pages/LacakPesanan';
 import SemuaKopi from './pages/SemuaKopi';
+import AnalisisBisnis from './pages/AnalisisBisnis';
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
           <Route path="/detail-pesanan/:id" element={<DetailPesananPetani />} />
           <Route path="/lacak-pesanan" element={<LacakPesanan />} />
           <Route path="/semua-kopi" element={<SemuaKopi />} />
+          <Route path="/analisis-bisnis" element={<AnalisisBisnis />} />
         </Routes>
       </div>
     </Router>
